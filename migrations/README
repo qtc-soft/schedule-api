@@ -1,0 +1,13 @@
+Generic single-database configuration.
+
+## Commands:
+
+### Create migrations
+```
+alembic revision --autogenerate -m "initial"
+```
+
+### Run migrations
+```
+alembic upgrade head
+```

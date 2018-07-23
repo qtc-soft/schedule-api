@@ -1,0 +1,17 @@
+__pycache__/
+.idea
+.idea/
+logs/
+dep/
+data/
+.env
+.env/
+.env-pypy/
+dist/
+build/
+*.spec
+test.py
+.project
+.dbeaver-data-sources.xml
+config.cfg
+

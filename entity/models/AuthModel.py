@@ -1,7 +1,3 @@
-from sqlalchemy.sql import select, any_, and_
-
-from settings import logger
-
 from common.managers.sessionManager import SessionManager
 
 # TSP
@@ -16,8 +12,8 @@ class AuthModel:
         result = False
         # search User
         u = await User.select_where(
-            cls_fields=[User.id, User.name, User.email, User.description],
-            conditions=[User.name == login, User.password == User.p_encrypt(password)]
+            cls_fields=[User.id, User.login, User.email, User.phone],
+            conditions=[User.login == login, User.password == User.p_encrypt(password)]
         )
         # if isset
         if u:

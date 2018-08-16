@@ -7,10 +7,6 @@ import time
 
 from .session import Session
 
-
-# TODO: Add object for configuration SessionManager
-# TODO: connector should not be from other Managers
-
 # meta-class
 class Singleton(type):
     _instances = {}

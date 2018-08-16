@@ -22,3 +22,12 @@ class IncorrectParamsException(Exception):
             item['code'] = code
         # add in list errors
         self.errors.append(item)
+
+
+# Exception on access denied
+class AccessException(Exception):
+    def __init__(self, msg: str = 'Access denied', code=403):
+        super().__init__(msg)
+        # code error for http
+        self.msg = msg
+        self.code = code

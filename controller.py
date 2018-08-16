@@ -1,16 +1,30 @@
 from aiohttp import web
 import ujson
+from abc import ABCMeta, abstractmethod
 
 from core.exceptions import IncorrectParamsException
 from core.web_view import DefaultMethodsImpl
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
 
-from marshmallow import Schema, fields, UnmarshalResult
+from marshmallow import Schema, fields
+
+from aiohttp import web
+import aiohttp_jinja2
+
+
+# index-page
+class ApiHelper(web.View):
+    @aiohttp_jinja2.template('index.html')
+    async def get(self):
+        return {'title': 'Schedule API'}
 
 # Class View
 class Login(DefaultMethodsImpl):
-    # get business-model
+    __metaclass__ = ABCMeta
+
+    is_auth = False
+
     def get_model(self):
         return AuthModel()
 
@@ -59,7 +73,10 @@ class Login(DefaultMethodsImpl):
 
 # Class View
 class Logout(DefaultMethodsImpl):
-    # get business-model
+    __metaclass__ = ABCMeta
+
+    is_auth = False
+
     def get_model(self):
         return AuthModel()
 
@@ -79,25 +96,34 @@ class Logout(DefaultMethodsImpl):
 
         return resp
 
-# Class View
-class Category(DefaultMethodsImpl):
-    # get business-model
-    def get_model(self):
-        return CategoryModel(select_fields=self.request_def_params['fields'])
 
-    # HTTP: GET
-    async def get(self):
-        # get users by get-params
-        data = await (self.get_model()).get_entities(
-            ids=self.request_def_params['ids'],
-            filter_name=self.request.rel_url.query.get('label', None)
-        )
-
-        return web.json_response(data=dict(result=data[0], errors=data[1]))
-
+# schema for default get-params
+class UsersMethodGetParamsSchema(Schema):
+    ids = fields.List(fields.Integer())
+    fields = fields.List(fields.String())
 
 # Class View
 class User(DefaultMethodsImpl):
-    # get business-model
+    @property
+    # list params for generate from str (,) to list
+    def _def_params_names(self) -> tuple:
+        return self.KEY_API_IDS, 'fields'
+
+    @property
+    # schema for validate def params
+    def _params_schema(self) -> Schema:
+        return UsersMethodGetParamsSchema()
+
+    # get business-account
     def get_model(self):
         return UserModel(select_fields=self.request_def_params['fields'])
+
+    # HTTP: GET
+    async def get(self):
+        # get models
+        data = await (self.get_model()).get_entities(
+            ids=self.request_def_params['ids'],
+            filter_name=self.request.rel_url.query.get('name', None)
+        )
+
+        return web.json_response(data=dict(result=data[0], errors=data[1]))

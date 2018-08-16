@@ -3,13 +3,19 @@
 """
 
 import asyncio
-import json
-
-from aiohttp import web
-from marshmallow import Schema, fields, UnmarshalResult
-from .exceptions import IncorrectParamsException
-
+from aiohttp import web, web_request
 from abc import ABCMeta, abstractmethod
+
+from marshmallow import Schema, fields, UnmarshalResult
+from .exceptions import IncorrectParamsException, AccessException
+
+from common.managers.sessionManager import SessionManager
+from common.managers.sessionManager import Session
+
+
+# get auth-token from request
+def get_auth_token_from_request(request: web.Request, param_name: str) -> str:
+    return request.headers.get(param_name) or request.cookies.get(param_name)
 
 
 # schema for default get-params
@@ -18,23 +24,51 @@ class DefParamsSchema(Schema):
     fields = fields.List(fields.String())
 
 
-# View-class for extended public_api
-class ExtendedApiView(web.View):
+# View-class for extended tsp_api
+class ExtendedApiView(web.View, metaclass=ABCMeta):
+
     # const name param ids
     KEY_API_IDS = 'ids'
     # const select_all
     KEY_API_SELECT_ALL = 'all'
+    # is authentification
+    is_auth = True
 
     # init function
-    def __init__(self, request):
+    def __init__(self, request: web_request.Request):
         super().__init__(request)
         # default get params
         self._def_request_params = None
 
+        # authentification-Session
+        self._session = self.session_storage.get_session_by_sid(get_auth_token_from_request(self.request, self.auth_header_name))
+        # if not self._session:
+        #     self._session = self.session_storage.generate_session(dict(id=1, name='qwerty', fleet_id=1))
+
+        # if only auth
+        if self.is_auth and not self._session:
+            # error access denied
+            raise AccessException('Access denied. Session is closed.')
+
+    @property
+    # storage sessions
+    def session_storage(self) -> SessionManager:
+        return self.request.app.session_storage
+
+    @property
+    # auth header name
+    def auth_header_name(self) -> str:
+        return self.request.app.auth_header_name
+
+    @property
+    # Session, if is_auth = True
+    def session(self) -> Session:
+        return self._session
+
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields', 'label', 'name', 'description'
+        return self.KEY_API_IDS, 'fields',
 
     @property
     # schema for validate def params
@@ -102,15 +136,12 @@ class ExtendedApiView(web.View):
         if not isinstance(data, list):
             # exception
             raise IncorrectParamsException('Incorrect params in body', [dict(selector='body', reason='Expected: list')])
+        return data
 
     # get data from body and validate
-    async def get_body_and_validate(self) -> list:
-        # get data (list) from body
-        body_data = await self.get_body_data()
-        # validate body_data
-        self.validate_body_params(body_data)
-
-        return body_data
+    async def get_body_and_validate(self):
+        # get & validate body-data
+        return self.validate_body_params(await self.get_body_data())
 
 
 # func-callback by finished Task
@@ -132,21 +163,48 @@ def task_finished_callback(task: asyncio.Task, res: list, err: list):
 
 
 # abstract class: default implementation API-methods
-class DefaultMethodsImpl(ExtendedApiView):
-    __metaclass__ = ABCMeta
-
+# this class extends ExtendedApiViewBase
+class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
     @abstractmethod
     def get_model(self):
         """
         get business-model
-        use get-param 'fields' (self.request_def_params['fields']) to create a model
+        use get-param 'fields' (self.request_def_params['field']) to create a model
         """
 
     # HTTP: GET
     async def get(self):
+        """
+        ---
+          tags:
+          - MODEL
+          summary: Help for MGate-API
+          description: Get Fleets by ids
+          produces:
+          - application/json
+          parameters:
+          - in: path
+            name: ids
+            description: Model ids
+            required: true
+            default: all
+            type: string
+          - in: path
+            name: fields
+            description: List fields from Model
+            required: false
+            default: ''
+            type: string
+          responses:
+            "200":
+              description: successful operation
+        """
+
         # get-param 'fields' - used to create a model
 
-        data = await (self.get_model()).get_entities()
+        data = await (self.get_model()).get_entities(
+            ids=self.request_def_params['ids']
+        )
 
         # return json-response
         return web.json_response(data=dict(result=data[0], errors=data[1]))

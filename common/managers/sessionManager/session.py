@@ -7,13 +7,13 @@ from settings import *
 # TODO: Add validate data for create Session
 # schema for validate Entity for generate Session
 # class DefSchema(Schema):
-#     name = fields.String(required=True)
+#     login = fields.String(required=True)
 #     id = fields.Integer(required=True)
 
 
 # base Session
 class Session:
-    __slots__ = 'name', 'id', 'sid', 'email', 'description'
+    __slots__ = 'login', 'id', 'sid', 'email', 'description'
 
     # load data from dict/object or kwargs
     def __init__(self, data: dict={}, **kwargs):
@@ -22,7 +22,7 @@ class Session:
         # int
         self.id = None
         # str
-        self.name = None
+        self.login = None
         # str
         self.email = None
         # str
@@ -53,11 +53,11 @@ class Session:
     def __dict__(self) -> dict:
         return dict(
             id=self.id,
-            name=self.name,
+            login=self.login,
             sid=self.sid,
             email=self.email,
             description=self.description
         )
 
     def __str__(self):
-        return 'Session {}. id={}, name={}, sid={}'.format(id(self), self.id, self.name, self.sid)
+        return 'Session {}. id={}, login={}, sid={}'.format(id(self), self.id, self.login, self.sid)

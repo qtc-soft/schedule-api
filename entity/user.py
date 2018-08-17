@@ -17,13 +17,17 @@ class User(Base, BaseEntity):
     # description
     description = Column(String(length=200))
     # login, user can enter to system from login, phone or mail
-    login = Column(String(length=100), unique=True)
+    login = Column(String(length=100), nullable=False, unique=True)
     # password
     password = Column(String(100), nullable=False)
     # email
     email = Column(String(50), nullable=False)
+    # confirm email value
+    email_confirm = Column(Boolean, default=False)
     # phone
     phone = Column(String(20), unique=True, nullable=False)
+    # confirm phone value
+    phone_confirm = Column(Boolean, default=False)
     # Country id
     country_id = Column(Integer, ForeignKey('Countries.id'))
     # City id

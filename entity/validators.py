@@ -21,6 +21,7 @@ class EntitySchema(EntityCreateSchema):
 class UserCreateSchema(EntityCreateSchema):
     name = fields.String(length=100)
     organization = fields.String(length=200)
+    description = fields.String(length=200)
     login = fields.String(length=100)
     password = fields.String(load_only=True)
     email = fields.Email()
@@ -28,8 +29,9 @@ class UserCreateSchema(EntityCreateSchema):
     country_id = fields.Integer()
     city_id = fields.Integer()
     address = fields.String(length=200)
-    data = fields.Dict()
     mail_agreement = fields.Boolean()
+    data = fields.Dict()
+    flags = fields.Integer()
 
 
 class UserSchema(UserCreateSchema):
@@ -43,4 +45,21 @@ class CountryCreateSchema(EntityCreateSchema):
 
 class CountrySchema(CountryCreateSchema):
     id = fields.Integer()
+
+# -- Schedule Schemas --
+# schema for create new schedule entity
+class ScheduleCreateSchema(EntityCreateSchema):
+    name = fields.String(length=100)
+    description = fields.String(length=200)
+    email = fields.Email()
+    phone = fields.String(length=50)
+    country_id = fields.Integer()
+    city_id = fields.Integer()
+    address = fields.String(length=200)
+    data = fields.Dict()
+    flags = fields.Integer()
+
+class ScheduleSchema(UserCreateSchema):
+    id = fields.Integer()
+# -- END User schemas --
 

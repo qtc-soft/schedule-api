@@ -10,18 +10,18 @@ class Schedule(Base, BaseEntity):
     # id
     id = Column(Integer, primary_key=True)
     # schedule name - unique link
-    name = Column(String(length=100), unique=True)
+    name = Column(String(length=100), unique=True, nullable=False)
     #TODO take default data from user table
     # description
     description = Column(String(length=200))
     # email
-    email = Column(String(50), nullable=False)
+    email = Column(String(50))
     # phone
-    phone = Column(String(20), nullable=False)
+    phone = Column(String(20))
     # Country id
-    country_id = Column(Integer, ForeignKey('Countries.id'), nullable=False)
+    country_id = Column(Integer, ForeignKey('Countries.id'))
     # City id
-    city_id = Column(Integer, ForeignKey('Cities.id'), nullable=False)
+    city_id = Column(Integer, ForeignKey('Cities.id'))
     # address
     address = Column(String(length=200))
     # access flags, for block set 0

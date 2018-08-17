@@ -1,31 +1,27 @@
 from sqlalchemy.sql import any_
 from settings import logger
-from entity.validators import UserCreateSchema, UserSchema
+from entity.validators import ScheduleCreateSchema, ScheduleSchema
 from .BaseModel import BaseModel
-from entity.user import User
+from entity.schedule import Schedule
 
 
 # business-model by entity User
-class UserModel(BaseModel):
+class ScheduleModel(BaseModel):
     def __init__(self, select_fields: set=set()):
         """
         :param select_fields: set, list fields for result
         """
         super().__init__(
-            entity_cls=User,
+            entity_cls=Schedule,
             all_fields=(
                 'id',
                 'name',
-                'organization',
                 'description',
-                'login',
-                'password',
                 'email',
                 'phone',
                 'country_id',
                 'city_id',
                 'address',
-                'mail_agreement',
                 'flags',
                 'data',
                 'created_at',
@@ -36,26 +32,20 @@ class UserModel(BaseModel):
 
     # Schema for create
     def _get_create_schema(self):
-        return UserCreateSchema()
+        return ScheduleCreateSchema()
 
     # Schema for update
     def _get_update_schema(self):
-        return UserSchema()
+        return ScheduleSchema()
 
     # CREATE Entity
     async def create_entity(self, data: dict, **kwargs) -> tuple:
-        # crypt code
-        if data.get(User.password.name):
-            data[User.password.name] = User.p_encrypt(data[User.password.name])
         result, errors = await super().create_entity(data, **kwargs)
 
         return result, errors
 
     # UPDATE Entity
     async def update_entity(self, data: dict, **kwargs) -> tuple:
-        # crypt code
-        if data.get(User.password.name):
-            data[User.password.name] = User.p_encrypt(data[User.password.name])
         # update
         result, errors = await super().update_entity(data, **kwargs)
 

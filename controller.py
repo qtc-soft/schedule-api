@@ -1,11 +1,11 @@
 from aiohttp import web
 import ujson
-from abc import ABCMeta, abstractmethod
 
 from core.exceptions import IncorrectParamsException
 from core.web_view import DefaultMethodsImpl
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
+from entity.models.ScheduleModel import ScheduleModel
 
 from marshmallow import Schema, fields
 
@@ -19,9 +19,54 @@ class ApiHelper(web.View):
     async def get(self):
         return {'title': 'Schedule API'}
 
+
+# Class View
+class Registration(DefaultMethodsImpl):
+
+    is_auth = False
+
+    def get_model(self):
+        return AuthModel()
+
+    # validate data: data is list
+    def validate_body_params(self, data) -> dict:
+        # schema for default get-params
+        class RegistrationSchema(Schema):
+            login = fields.String(100, required=True)
+            password = fields.String(100, required=True)
+            email = fields.String(50, required=True)
+            phone = fields.String(20, required=True)
+
+        # validate
+        valid_data = RegistrationSchema().load(data)
+
+        # if errors
+        if valid_data.errors:
+            # error
+            err = IncorrectParamsException('Invalid login-data')
+            # calc errors
+            for field_name in valid_data.errors:
+                for err_msg in valid_data.errors[field_name]:
+                    err.add_error(selector=field_name, reason=err_msg)
+            # return error
+            raise err
+
+        # return validate data
+        return valid_data.data
+
+    # HTTP: POST
+    async def post(self):
+        # data from request.body
+        body_data = await self.get_body_and_validate()
+        # model.login
+        result, errors = await (self.get_model()).registration(data=body_data)
+
+        # return json-response
+        return web.json_response(data=dict(result=result, errors=errors))
+
+
 # Class View
 class Login(DefaultMethodsImpl):
-    __metaclass__ = ABCMeta
 
     is_auth = False
 
@@ -73,7 +118,6 @@ class Login(DefaultMethodsImpl):
 
 # Class View
 class Logout(DefaultMethodsImpl):
-    __metaclass__ = ABCMeta
 
     is_auth = False
 
@@ -98,9 +142,10 @@ class Logout(DefaultMethodsImpl):
 
 
 # schema for default get-params
-class UsersMethodGetParamsSchema(Schema):
+class UserMethodGetParamsSchema(Schema):
     ids = fields.List(fields.Integer())
     fields = fields.List(fields.String())
+
 
 # Class View
 class User(DefaultMethodsImpl):
@@ -112,11 +157,38 @@ class User(DefaultMethodsImpl):
     @property
     # schema for validate def params
     def _params_schema(self) -> Schema:
-        return UsersMethodGetParamsSchema()
+        return UserMethodGetParamsSchema()
 
     # get business-account
     def get_model(self):
         return UserModel(select_fields=self.request_def_params['fields'])
+
+    # HTTP: GET
+    async def get(self):
+        # get models
+        data = await (self.get_model()).get_entities(
+            ids=self.request_def_params['ids'],
+            filter_name=self.request.rel_url.query.get('name', None)
+        )
+
+        return web.json_response(data=dict(result=data[0], errors=data[1]))
+
+
+# Class View
+class Schedule(DefaultMethodsImpl):
+    @property
+    # list params for generate from str (,) to list
+    def _def_params_names(self) -> tuple:
+        return self.KEY_API_IDS, 'fields'
+
+    @property
+    # schema for validate def params
+    def _params_schema(self) -> Schema:
+        return UserMethodGetParamsSchema()
+
+    # get business-account
+    def get_model(self):
+        return ScheduleModel(select_fields=self.request_def_params['fields'])
 
     # HTTP: GET
     async def get(self):

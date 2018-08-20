@@ -13,7 +13,7 @@ from settings import *
 
 # base Session
 class Session:
-    __slots__ = 'login', 'id', 'sid', 'email', 'description'
+    __slots__ = 'id', 'login', 'name', 'sid', 'email', 'phone', 'description', 'flags'
 
     # load data from dict/object or kwargs
     def __init__(self, data: dict={}, **kwargs):
@@ -24,9 +24,15 @@ class Session:
         # str
         self.login = None
         # str
+        self.name = None
+        # str
         self.email = None
         # str
+        self.phone = None
+        # str
         self.description = None
+        # int
+        self.flags = 0
         # str
         self.sid = None
 
@@ -50,14 +56,21 @@ class Session:
         return True if self.sid else False
 
     @property
+    def is_admin(self):
+        return True if self.flags == -4 else False
+
+    @property
     def __dict__(self) -> dict:
         return dict(
             id=self.id,
             login=self.login,
+            name=self.name,
             sid=self.sid,
             email=self.email,
-            description=self.description
+            phone=self.phone,
+            description=self.description,
+            flags=self.flags
         )
 
     def __str__(self):
-        return 'Session {}. id={}, login={}, sid={}'.format(id(self), self.id, self.login, self.sid)
+        return 'Session {}. id={}, login={}, sid={}'.format(id(self), self.id, self.login, self.sid, self.flags)

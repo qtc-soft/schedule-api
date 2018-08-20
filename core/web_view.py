@@ -110,12 +110,15 @@ class ExtendedApiView(web.View, metaclass=ABCMeta):
                 for field_err_pos in params_loaded.errors[field_name]:
                     errors.append(dict(
                         selector=field_name,
-                        reason=params_loaded.errors[field_name][field_err_pos][0] if isinstance(params_loaded.errors[field_name][field_err_pos], list) else params_loaded.errors[field_name][field_err_pos],
+                        reason=params_loaded.errors[field_name][field_err_pos][0] if isinstance(
+                            params_loaded.errors[field_name][field_err_pos], list) else
+                        params_loaded.errors[field_name][field_err_pos],
                         position=field_err_pos
                     ))
 
             # exception "not validate"
-            raise IncorrectParamsException(msg='Incorrect param: {}'.format(params_loaded.errors, errors), errors=errors)
+            raise IncorrectParamsException(msg='Incorrect param: {}'.format(params_loaded.errors, errors),
+                                           errors=errors)
 
         # return dict by params_names
         return params_loaded.data
@@ -178,8 +181,8 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
         ---
           tags:
           - MODEL
-          summary: Help for MGate-API
-          description: Get Fleets by ids
+          summary: Help for Schedule-API
+          description: Get Entities by ids
           produces:
           - application/json
           parameters:

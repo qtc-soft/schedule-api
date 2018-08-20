@@ -3,7 +3,7 @@ from aiohttp.log import access_logger
 import configparser
 import os
 
-logger = logging.getLogger('mgate.service')
+logger = logging.getLogger('schedule-api.service')
 config = configparser.ConfigParser()
 
 

@@ -18,7 +18,12 @@ routes = [
     (METH_GET,      '/schedules/{ids}',      Schedule),
     (METH_POST,     '/schedules',            Schedule),
     (METH_PUT,      '/schedules',            Schedule),
-    (METH_DELETE,   '/schedules/{ids}',      Schedule)
+    (METH_DELETE,   '/schedules/{ids}',      Schedule),
+
+    (METH_GET,      '/schedule-details/{ids}',      ScheduleDetail),
+    (METH_POST,     '/schedule-details',            ScheduleDetail),
+    (METH_PUT,      '/schedule-details',            ScheduleDetail),
+    (METH_DELETE,   '/schedule-details/{ids}',      ScheduleDetail)
 ]
 
 

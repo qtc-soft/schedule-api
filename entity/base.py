@@ -44,7 +44,7 @@ class BaseEntity(object):
 
     @classmethod
     # get all records by fields from DB
-    async def select_all_by_fields(cls, fields: list=list()):
+    async def select_all_by_fields(cls, fields: list = list()):
         if not fields or len(fields) == 0:
             fields = [cls]
         return await DBManager().query_fetch(select(fields))

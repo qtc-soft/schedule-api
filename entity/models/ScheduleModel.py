@@ -1,8 +1,12 @@
 from sqlalchemy.sql import any_
 from settings import logger
-from entity.validators import ScheduleCreateSchema, ScheduleSchema
+
 from .BaseModel import BaseModel
+
+from entity.validators import ScheduleCreateSchema, ScheduleSchema
 from entity.schedule import Schedule
+
+from common.managers.sessionManager import SessionManager
 
 
 # business-model by entity User
@@ -19,6 +23,7 @@ class ScheduleModel(BaseModel):
                 'description',
                 'email',
                 'phone',
+                'creater_id',
                 'country_id',
                 'city_id',
                 'address',

@@ -12,12 +12,14 @@ class AuthModel:
         result = False
         # search User
         u = await User.select_where(
-            cls_fields=[User.id, User.login, User.email, User.phone, User.email_confirm, User.phone_confirm],
+            cls_fields=[User.id, User.name, User.login, User.email, User.phone, User.email_confirm, User.phone_confirm, User.flags],
             conditions=[User.login == login, User.password == User.p_encrypt(password), User.email_confirm == True or User.phone_confirm == True]
         )
         # if isset
         if u:
-            result = SessionManager().generate_session(data=dict(u[0]))
+            session_data = SessionManager().generate_session(data=dict(u[0]))
+            result = dict(sid=session_data.sid, name=session_data.name, login=session_data.login, email=session_data.email, phone=session_data.phone)
+
         return result
 
     # registration, return new user

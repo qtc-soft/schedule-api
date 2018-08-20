@@ -133,6 +133,8 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id', 'schedule_id')
     )
+    # for tests
+    op.execute("insert into Users (login, password, email, phone, email_confirm, phone_confirm, flags) values ('admin', '202cb962ac59075b964b07152d234b70', 'qtc-soft@gmail.com', '111', True, True, -1)")
     # ### end Alembic commands ###
 
 

@@ -73,3 +73,7 @@ class SessionManager(metaclass=Singleton):
     def generate_sid(self) -> str:
         """ generate new sid """
         return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
+
+    # is admin session?
+    def is_admin(self, sid) -> bool:
+        return self._pool[self._sids_users[sid]][sid].is_admin if self.isset_session_by_sid(sid) else None

@@ -53,6 +53,7 @@ class ScheduleCreateSchema(EntityCreateSchema):
     description = fields.String(length=200)
     email = fields.Email()
     phone = fields.String(length=50)
+    creater_id = fields.Integer()
     country_id = fields.Integer()
     city_id = fields.Integer()
     address = fields.String(length=200)
@@ -61,5 +62,18 @@ class ScheduleCreateSchema(EntityCreateSchema):
 
 class ScheduleSchema(UserCreateSchema):
     id = fields.Integer()
-# -- END User schemas --
+# -- END Schedule schemas --
+
+
+# -- Schedule Detail Schemas --
+# schema for create new schedule detail entity
+class ScheduleDetailCreateSchema(EntityCreateSchema):
+    time = fields.Integer()
+    description = fields.String(length=200)
+    members = fields.Integer()
+    schedule_id = fields.Integer()
+
+class ScheduleDetailSchema(UserCreateSchema):
+    id = fields.Integer()
+# -- END Schedule Detail schemas --
 

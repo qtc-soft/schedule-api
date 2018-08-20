@@ -53,20 +53,3 @@ class User(Base, BaseEntity):
     # encrypt (for password)
     def p_encrypt(cls, val: str) -> str:
         return md5(val.encode('utf-8')).hexdigest()
-
-
-# Entity UserSchedule
-class UserSchedule(Base, BaseEntity):
-    __tablename__ = 'UserSchedules'
-
-    # id
-    id = Column(Integer, primary_key=True)
-    # User id
-    user_id = Column(Integer, ForeignKey('Users.id'), nullable=False)
-    # Schedule id
-    schedule_id = Column(Integer, ForeignKey('Schedules.id'), nullable=False)
-
-    __table_args__ = (
-        # unique user & schedule id
-        UniqueConstraint('user_id', 'schedule_id'),
-    )

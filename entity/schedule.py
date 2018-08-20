@@ -18,6 +18,8 @@ class Schedule(Base, BaseEntity):
     email = Column(String(50))
     # phone
     phone = Column(String(20))
+    # creter
+    creater_id = Column(Integer, ForeignKey('Users.id'), nullable=False)
     # Country id
     country_id = Column(Integer, ForeignKey('Countries.id'))
     # City id
@@ -35,21 +37,4 @@ class Schedule(Base, BaseEntity):
 
     __table_args__ = (
         UniqueConstraint('name'),
-    )
-
-
-# Entity ScheduleDetails
-class ScheduleDetails(Base, BaseEntity):
-    __tablename__ = 'ScheduleDetails'
-
-    # id
-    id = Column(Integer, primary_key=True)
-    # schedule id
-    schedule_id = Column(Integer, ForeignKey('Schedules.id'), nullable=False)
-    # detail id
-    sch_detail_id = Column(Integer, ForeignKey('SCHDetails.id'), nullable=False)
-
-    __table_args__ = (
-        # unique schedule & schedule detail id
-        UniqueConstraint('schedule_id', 'sch_detail_id'),
     )

@@ -6,6 +6,7 @@ from core.web_view import DefaultMethodsImpl
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
 from entity.models.ScheduleModel import ScheduleModel
+from entity.models.ScheduleDetailModel import ScheduleDetailModel
 
 from marshmallow import Schema, fields
 
@@ -109,7 +110,7 @@ class Login(DefaultMethodsImpl):
         # status 200 or 403
         if data:
             resp.body = ujson.dumps(dict(
-                result=data.__dict__
+                result=data
             ))
         else:
             resp.set_status(status=403, reason='Access denied..')
@@ -196,6 +197,39 @@ class Schedule(DefaultMethodsImpl):
         data = await (self.get_model()).get_entities(
             ids=self.request_def_params['ids'],
             filter_name=self.request.rel_url.query.get('name', None)
+        )
+
+        return web.json_response(data=dict(result=data[0], errors=data[1]))
+
+
+# schema for default get-params
+class ScheduleDetailMethodGetParamsSchema(UserMethodGetParamsSchema):
+    schedules = fields.List(fields.Integer())
+
+
+# Class View
+class ScheduleDetail(DefaultMethodsImpl):
+    @property
+    # list params for generate from str (,) to list
+    def _def_params_names(self) -> tuple:
+        return self.KEY_API_IDS, 'fields', 'schedules'
+
+    @property
+    # schema for validate def params
+    def _params_schema(self) -> Schema:
+        return ScheduleDetailMethodGetParamsSchema()
+
+    # get business-account
+    def get_model(self):
+        return ScheduleDetailModel(select_fields=self.request_def_params['fields'])
+
+    # HTTP: GET
+    async def get(self):
+        # get tags by get-params
+        data = await (self.get_model()).get_entities(
+            ids=self.request_def_params['ids'],
+            filter_name=self.request.rel_url.query.get('name', None),
+            schedule_ids=self.request_def_params['schedules'],
         )
 
         return web.json_response(data=dict(result=data[0], errors=data[1]))

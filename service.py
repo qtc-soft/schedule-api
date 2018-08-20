@@ -33,7 +33,7 @@ if __name__ == "__main__":
     count_processes = int(config.get("SERVICE", "count_processes"))
     processes = [Process(
         target=main,
-        kwargs=dict(prefix_name='{}-{}'.format(config.get("SERVICE", "name", fallback='mgate0'), i+1)),
+        kwargs=dict(prefix_name='{}-{}'.format(config.get("SERVICE", "name", fallback='schedule0'), i+1)),
         name='web_api %{}'.format(i+1),
     ) for i in range(count_processes)]
 

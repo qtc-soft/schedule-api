@@ -189,7 +189,7 @@ class Schedule(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return ScheduleModel(select_fields=self.request_def_params['fields'])
+        return ScheduleModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):

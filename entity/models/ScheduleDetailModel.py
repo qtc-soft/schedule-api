@@ -12,7 +12,7 @@ from common.managers.sessionManager import SessionManager
 
 # business-model by entity User
 class ScheduleDetailModel(BaseModel):
-    def __init__(self, select_fields: set=set()):
+    def __init__(self, select_fields: set=set(), creater_id: int = -1):
         """
         :param select_fields: set, list fields for result
         """
@@ -29,6 +29,8 @@ class ScheduleDetailModel(BaseModel):
             ),
             select_fields=select_fields
         )
+        # get creter id for current session
+        self.creater_id = creater_id
 
     # Schema for create
     def _get_create_schema(self):
@@ -44,26 +46,24 @@ class ScheduleDetailModel(BaseModel):
         result = []
         errors = []
 
-        # check permissions for schedule_ids by account
-        if schedule_ids:
-            # select schedules by ids
-            schedule_items = await Schedule.select_by_ids(model_ids=schedule_ids)
-            # get allowed schedule_ids ids and errors by schedule_ids
-            allowed_schedule_ids, errs = self.get_allowed_ids_by_list(all_ids=schedule_ids, items=schedule_items)
-            # add ids-errors in all errors
-            errors.extend(errs)
-
-        # get all schedule_ids by account
-        else:
-            schedule_items = await Schedule.select_all()
-            # allowed schedule_ids
-            allowed_schedule_ids = [schedule_item['id'] for schedule_item in schedule_items]
-
         # conditions by select users
-        conditions = []
+        conditions = [Schedule.creater_id == self.creater_id]
 
-        # condition by allowed Fleets
-        conditions.append(self.entity_cls.schedule_id == any_(allowed_schedule_ids))
+        if schedule_ids:
+            # condition by allowed Fleets
+            conditions.append(Schedule.id == any_(schedule_ids))
+
+        # allowed schedules
+        allow_schedule_items = await Schedule.select_where(
+            cls_fields=[Schedule.id],
+            conditions=conditions
+        )
+
+        # allowed schedules ids
+        allow_schedule_ids = self.get_allowed_ids_by_list(all_ids=schedule_ids, items=allow_schedule_items)
+
+        # conditions for select details, by allowed schedule
+        conditions = [self.entity_cls.schedule_id == any_(allow_schedule_ids)]
 
         # condition by selector ids
         if ids:
@@ -103,13 +103,39 @@ class ScheduleDetailModel(BaseModel):
 
     # CREATE Entity
     async def create_entity(self, data: dict, **kwargs) -> tuple:
+        # allowed schedules
+        allow_schedule_items = await Schedule.select_where(
+            cls_fields=[Schedule.id],
+            conditions=[Schedule.creater_id == self.creater_id, Schedule.id == any_(data['schedule_ids'])]
+        )
+        # allowed schedules ids
+        allowed_fleet_ids, errs = self.get_allowed_ids_by_list(all_ids=data['schedule_ids'], items=allow_schedule_items)
+        # change ids in data on accessable
+        data['schedule_ids'] = allowed_fleet_ids
+
+        # get entites
         result, errors = await super().create_entity(data, **kwargs)
+        # extend errors
+        errors.append(errs)
 
         return result, errors
 
     # UPDATE Entity
     async def update_entity(self, data: dict, **kwargs) -> tuple:
         # update
-        result, errors = await super().update_entity(data, **kwargs)
+        # allowed schedules
+        allow_schedule_items = await Schedule.select_where(
+            cls_fields=[Schedule.id],
+            conditions=[Schedule.creater_id == self.creater_id, Schedule.id == any_(data['schedule_ids'])]
+        )
+        # allowed schedules ids
+        allowed_fleet_ids, errs = self.get_allowed_ids_by_list(all_ids=data['schedule_ids'], items=allow_schedule_items)
+        # change ids in data on accessable
+        data['schedule_ids'] = allowed_fleet_ids
+
+        # get entites
+        result, errors = await super().create_entity(data, **kwargs)
+        # extend errors
+        errors.append(errs)
 
         return result, errors

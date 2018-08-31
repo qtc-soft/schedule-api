@@ -242,7 +242,7 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
             # add to list tasks
             tasks.append(task)
 
-        # wait tasks create Fleets
+        # wait tasks create entity
         await asyncio.wait(tasks)
 
         # return json-response
@@ -253,7 +253,7 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
         # get data from body and validate
         body_data = await self.get_body_and_validate()
 
-        # Fleet model
+        # Entity model
         model = self.get_model()
 
         # result vars

@@ -1,29 +1,25 @@
 from sqlalchemy.sql import any_
-from settings import logger
 
 from .BaseModel import BaseModel
 
-from entity.validators import ScheduleDetailCreateSchema, ScheduleDetailSchema
+from entity.validators import CustomerCreateSchema, CustomerSchema
+from entity.customer import Customer
 from entity.schedule import Schedule
-from entity.schDetail import SCHDetail
-
-from common.managers.sessionManager import SessionManager
 
 
 # business-model by entity User
-class ScheduleDetailModel(BaseModel):
+class CustomerModel(BaseModel):
     def __init__(self, select_fields: set=set(), creater_id: int = -1):
         """
         :param select_fields: set, list fields for result
         """
         super().__init__(
-            entity_cls=SCHDetail,
+            entity_cls=Customer,
             all_fields=(
                 'id',
-                'time',
-                'description',
-                'members',
-                'schedule_id',
+                'name',
+                'phone',
+                'email',
                 'created_at',
                 'updated_at',
             ),
@@ -34,15 +30,14 @@ class ScheduleDetailModel(BaseModel):
 
     # Schema for create
     def _get_create_schema(self):
-        return ScheduleDetailCreateSchema()
+        return CustomerCreateSchema()
 
     # Schema for update
     def _get_update_schema(self):
-        return ScheduleDetailSchema()
+        return CustomerSchema()
 
     # GET Entity
     async def get_entities(self, ids: list, schedule_ids: set = None, filter_name: str = None) -> tuple:
-        # result vars
         result = []
         errors = []
 
@@ -97,7 +92,7 @@ class ScheduleDetailModel(BaseModel):
             # add errors by not found ids
             for id_diff in ids_diff:
                 errors.append(
-                    self.get_error_item(selector='id', reason='Schedule or schedule-detail is not found', value=id_diff))
+                    self.get_error_item(selector='id', reason='Customer or schedule-detail is not found', value=id_diff))
         result.append(format_result)
         return result, errors
 
@@ -111,9 +106,9 @@ class ScheduleDetailModel(BaseModel):
         sch_ids = data['schedule_id']
 
         # allowed schedules
-        allow_schedule_items = await Schedule.select_where(
-            cls_fields=[Schedule.id],
-            conditions=[Schedule.creater_id == self.creater_id, Schedule.id == sch_ids]
+        allow_schedule_items = await Customer.select_where(
+            cls_fields=[Customer.id],
+            conditions=[Customer.creater_id == self.creater_id, Customer.id == sch_ids]
         )
         # if schedule accessable
         if allow_schedule_items:
@@ -134,9 +129,9 @@ class ScheduleDetailModel(BaseModel):
         sch_ids = data['schedule_id']
 
         # allowed schedules
-        allow_schedule_items = await Schedule.select_where(
-            cls_fields=[Schedule.id],
-            conditions=[Schedule.creater_id == self.creater_id, Schedule.id == sch_ids]
+        allow_schedule_items = await Customer.select_where(
+            cls_fields=[Customer.id],
+            conditions=[Customer.creater_id == self.creater_id, Customer.id == sch_ids]
         )
         # if schedule accessable
         if allow_schedule_items:

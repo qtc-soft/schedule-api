@@ -53,7 +53,7 @@ class ScheduleModel(BaseModel):
         # conditions by select users
         conditions = []
 
-        # condition by allowed Fleets
+        # condition by allowed creaters
         conditions.append(self.entity_cls.creater_id == self.creater_id)
 
         # condition by selector ids
@@ -86,7 +86,7 @@ class ScheduleModel(BaseModel):
             # add errors by not found ids
             for id_diff in ids_diff:
                 errors.append(
-                    self.get_error_item(selector='id', reason='Schedule is not found in the Fleets', value=id_diff))
+                    self.get_error_item(selector='id', reason='Schedule is not found in database', value=id_diff))
 
         return result, errors
 

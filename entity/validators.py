@@ -60,7 +60,8 @@ class ScheduleCreateSchema(EntityCreateSchema):
     data = fields.Dict()
     flags = fields.Integer()
 
-class ScheduleSchema(UserCreateSchema):
+
+class ScheduleSchema(ScheduleCreateSchema):
     id = fields.Integer()
 # -- END Schedule schemas --
 
@@ -73,7 +74,20 @@ class ScheduleDetailCreateSchema(EntityCreateSchema):
     members = fields.Integer()
     schedule_id = fields.Integer()
 
-class ScheduleDetailSchema(UserCreateSchema):
+
+class ScheduleDetailSchema(ScheduleDetailCreateSchema):
     id = fields.Integer()
 # -- END Schedule Detail schemas --
 
+
+# -- Customer Schemas --
+# schema for create new schedule entity
+class CustomerCreateSchema(EntityCreateSchema):
+    name = fields.String(length=100)
+    email = fields.Email()
+    phone = fields.String(length=50)
+
+
+class CustomerSchema(ScheduleCreateSchema):
+    id = fields.Integer()
+# -- END Customer schemas --

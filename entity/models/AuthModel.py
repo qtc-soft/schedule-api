@@ -4,7 +4,7 @@ from entity.user import User
 from entity.models.UserModel import UserModel
 
 
-# business-model by authentification User (from Fleet)
+# business-model by authentification User
 class AuthModel:
     # login, return session
     async def login(self, login: str, password: str):

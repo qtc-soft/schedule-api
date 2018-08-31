@@ -221,7 +221,35 @@ class ScheduleDetail(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return ScheduleDetailModel(select_fields=self.request_def_params['fields'])
+        return ScheduleDetailModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+
+    # HTTP: GET
+    async def get(self):
+        # get tags by get-params
+        data = await (self.get_model()).get_entities(
+            ids=self.request_def_params['ids'],
+            filter_name=self.request.rel_url.query.get('name', None),
+            schedule_ids=self.request_def_params['schedules'],
+        )
+
+        return web.json_response(data=dict(result=data[0], errors=data[1]))
+
+
+# class View
+class Customer(DefaultMethodsImpl):
+    @property
+    # list params for generate from str (,) to list
+    def _def_params_names(self) -> tuple:
+        return self.KEY_API_IDS, 'fields', 'schedules'
+
+    @property
+    # schema for validate def params
+    def _params_schema(self) -> Schema:
+        return ScheduleDetailMethodGetParamsSchema()
+
+    # get business-account
+    def get_model(self):
+        return CustomerModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):

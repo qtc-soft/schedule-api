@@ -26,7 +26,8 @@ class Schedule(Base, BaseEntity):
     city_id = Column(Integer, ForeignKey('Cities.id'))
     # address
     address = Column(String(length=200))
-    # access flags, for block set 0
+    # access flags, default 1
+    # 0x1 - deactivate schedule
     flags = Column(Integer, default=1)
     # some schedule settings, field for free data or schedule settings
     data = Column(types.JSON)

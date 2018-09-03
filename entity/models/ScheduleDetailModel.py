@@ -82,12 +82,12 @@ class ScheduleDetailModel(BaseModel):
         # ids by selected items
         select_ids = set()
         # format data
-        format_result = dict()
+        # format_result = dict()
         # generate result list
         for record in records:
             select_ids.add(record['id'])
-            format_result.setdefault(record['schedule_id'], [])
-            format_result[record['schedule_id']].append(self.get_result_item(record, self.select_fields))
+            # format_result.setdefault(record['schedule_id'], [])
+            result.append(self.get_result_item(record, self.select_fields))
 
         # add not selected items in errors
         if ids:
@@ -98,7 +98,10 @@ class ScheduleDetailModel(BaseModel):
             for id_diff in ids_diff:
                 errors.append(
                     self.get_error_item(selector='id', reason='Schedule or schedule-detail is not found', value=id_diff))
-        result.append(format_result)
+
+        # if format_result:
+        #     result.append(format_result)
+
         return result, errors
 
     # CREATE Entity

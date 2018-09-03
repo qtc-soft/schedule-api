@@ -7,6 +7,7 @@ from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
 from entity.models.ScheduleModel import ScheduleModel
 from entity.models.ScheduleDetailModel import ScheduleDetailModel
+from entity.models.CustomerModel import CustomerModel
 
 from marshmallow import Schema, fields
 
@@ -78,8 +79,8 @@ class Login(DefaultMethodsImpl):
     def validate_body_params(self, data) -> dict:
         # schema for default get-params
         class LoginSchema(Schema):
-            login = fields.String(required=True)
-            password = fields.String(required=True)
+            login = fields.String(100, required=True)
+            password = fields.String(100, required=True)
 
         # validate
         valid_data = LoginSchema().load(data)

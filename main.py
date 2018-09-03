@@ -25,12 +25,14 @@ async def on_prepare(request, response):
 
 
 # run service-api
-def main(prefix_name: str='schedule', is_debug=False):
+def main(prefix_name: str='schedule-online', is_debug=False):
     # set uvloop
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     # get event-loop
     loop = asyncio.get_event_loop()
 
+    # init settings
+    init_settings()
     logger.info('{}:debug is {}'.format(prefix_name, is_debug))
     # set debug (or not) to loop
     loop.set_debug(is_debug)

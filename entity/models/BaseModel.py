@@ -24,6 +24,8 @@ class BaseModel:
                 raise exc
             # and set
             self.select_fields = select_fields
+            # required parameter
+            self.select_fields.add('id')
         # if not selected fields - all
         else:
             self.select_fields = set(self.all_fields)

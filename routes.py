@@ -25,8 +25,13 @@ routes = [
     (METH_PUT,      '/schedule-details',            ScheduleDetail),
     (METH_DELETE,   '/schedule-details/{ids}',      ScheduleDetail),
 
-    (METH_GET,      '/customers/{ids}',      Customer),
-    (METH_POST,     '/customers',            Customer),
+    (METH_GET,      '/orders/{ids}',      Order),
+    (METH_POST,     '/orders',            Order), # only for customers
+    (METH_PUT,      '/orders',            Order), # only for customers
+    (METH_DELETE,   '/orders/{ids}',      Order), # not delete, change status
+
+    (METH_GET,      '/customers/{ids}',      Customer), # only for users
+    (METH_POST,     '/customers',            Customer), # only for customers
     (METH_PUT,      '/customers',            Customer),
     (METH_DELETE,   '/customers/{ids}',      Customer),
 ]

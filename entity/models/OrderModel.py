@@ -5,21 +5,25 @@ from .BaseModel import BaseModel
 from entity.validators import ScheduleDetailCreateSchema, ScheduleDetailSchema
 from entity.schedule import Schedule
 from entity.schDetail import SCHDetail
+from entity.order import Order
 
 
 # business-model by entity User
-class ScheduleDetailModel(BaseModel):
+class OrderModel(BaseModel):
     def __init__(self, select_fields: set=set(), creater_id: int = -1):
         """
         :param select_fields: set, list fields for result
         """
         super().__init__(
-            entity_cls=SCHDetail,
+            entity_cls=Order,
             all_fields=(
                 'id',
                 'time',
                 'description',
-                'members',
+                'status',
+                'payment',
+                'auto_confirm',
+                'customer_id',
                 'schedule_id',
                 'created_at',
                 'updated_at',
@@ -38,7 +42,7 @@ class ScheduleDetailModel(BaseModel):
         return ScheduleDetailSchema()
 
     # GET Entity
-    async def get_entities(self, ids: list, schedule_ids: set = None, filter_name: str = None) -> tuple:
+    async def get_entities(self, ids: list, schedule_ids: set = None, customer_ids: set = None, filter_name: str = None) -> tuple:
         # result vars
         result = []
         errors = []
@@ -67,6 +71,10 @@ class ScheduleDetailModel(BaseModel):
             conditions.append(self.entity_cls.id == any_(ids))
 
         # condition by selector name
+        if customer_ids:
+            conditions.append(self.entity_cls.customer_id == any_(customer_ids))
+
+        # condition by selector name
         if filter_name:
             conditions.append(self.entity_cls.name.contains(filter_name))
 
@@ -78,12 +86,9 @@ class ScheduleDetailModel(BaseModel):
 
         # ids by selected items
         select_ids = set()
-        # format data
-        # format_result = dict()
         # generate result list
         for record in records:
             select_ids.add(record['id'])
-            # format_result.setdefault(record['schedule_id'], [])
             result.append(self.get_result_item(record, self.select_fields))
 
         # add not selected items in errors
@@ -95,9 +100,6 @@ class ScheduleDetailModel(BaseModel):
             for id_diff in ids_diff:
                 errors.append(
                     self.get_error_item(selector='id', reason='Schedule or schedule-detail is not found', value=id_diff))
-
-        # if format_result:
-        #     result.append(format_result)
 
         return result, errors
 

@@ -7,6 +7,7 @@ from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
 from entity.models.ScheduleModel import ScheduleModel
 from entity.models.ScheduleDetailModel import ScheduleDetailModel
+from entity.models.OrderModel import OrderModel
 from entity.models.CustomerModel import CustomerModel
 
 from marshmallow import Schema, fields
@@ -231,6 +232,41 @@ class ScheduleDetail(DefaultMethodsImpl):
             ids=self.request_def_params['ids'],
             filter_name=self.request.rel_url.query.get('name', None),
             schedule_ids=self.request_def_params['schedules'],
+        )
+
+        return web.json_response(data=dict(result=data[0], errors=data[1]))
+
+
+# schema for default get-params
+class OrderMethodGetParamsSchema(UserMethodGetParamsSchema):
+    schedules = fields.List(fields.Integer())
+    customers = fields.List(fields.Integer())
+
+
+# Class View
+class Order(DefaultMethodsImpl):
+    @property
+    # list params for generate from str (,) to list
+    def _def_params_names(self) -> tuple:
+        return self.KEY_API_IDS, 'fields', 'schedules', 'customers'
+
+    @property
+    # schema for validate def params
+    def _params_schema(self) -> Schema:
+        return OrderMethodGetParamsSchema()
+
+    # get business-account
+    def get_model(self):
+        return OrderModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+
+    # HTTP: GET
+    async def get(self):
+        # get tags by get-params
+        data = await (self.get_model()).get_entities(
+            ids=self.request_def_params['ids'],
+            filter_name=self.request.rel_url.query.get('name', None),
+            schedule_ids=self.request_def_params['schedules'],
+            customer_ids=self.request_def_params['customers'],
         )
 
         return web.json_response(data=dict(result=data[0], errors=data[1]))

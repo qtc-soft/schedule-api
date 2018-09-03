@@ -16,7 +16,7 @@ class SCHDetail(Base, BaseEntity):
     # members count
     members = Column(Integer, default=1, nullable=False)
     # schedule
-    schedule_id = Column(Integer, ForeignKey('Schedules.id'))
+    schedule_id = Column(Integer, ForeignKey('Schedules.id'), nullable=False)
     # time created
     created_at = Column(Integer, default=int(datetime.now().timestamp()))
     # time updated

@@ -2,9 +2,8 @@ from sqlalchemy.sql import any_
 
 from .BaseModel import BaseModel
 
-from entity.validators import ScheduleDetailCreateSchema, ScheduleDetailSchema
+from entity.validators import OrderCreateSchema, OrderSchema
 from entity.schedule import Schedule
-from entity.schDetail import SCHDetail
 from entity.order import Order
 
 
@@ -35,14 +34,14 @@ class OrderModel(BaseModel):
 
     # Schema for create
     def _get_create_schema(self):
-        return ScheduleDetailCreateSchema()
+        return OrderCreateSchema()
 
     # Schema for update
     def _get_update_schema(self):
-        return ScheduleDetailSchema()
+        return OrderSchema()
 
     # GET Entity
-    async def get_entities(self, ids: list, schedule_ids: set = None, customer_ids: set = None, filter_name: str = None) -> tuple:
+    async def get_entities(self, ids: list, schedule_ids: set = None, customer_ids: set = None, filter_name: str = None, status: str = None) -> tuple:
         # result vars
         result = []
         errors = []

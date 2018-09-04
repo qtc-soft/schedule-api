@@ -9,7 +9,7 @@ from entity.schDetail import SCHDetail
 
 # business-model by entity User
 class ScheduleDetailModel(BaseModel):
-    def __init__(self, select_fields: set=set(), creater_id: int = -1):
+    def __init__(self, allowed_schedule_ids: set, select_fields: set=set(), creater_id: int = -1):
         """
         :param select_fields: set, list fields for result
         """
@@ -28,47 +28,36 @@ class ScheduleDetailModel(BaseModel):
         )
         # get creter id for current session
         self.creater_id = creater_id
+        # allowed schedules
+        self.allowed_schedule_ids = allowed_schedule_ids
 
     # Schema for create
+    @classmethod
     def _get_create_schema(self):
         return ScheduleDetailCreateSchema()
 
     # Schema for update
+    @classmethod
     def _get_update_schema(self):
         return ScheduleDetailSchema()
 
     # GET Entity
-    async def get_entities(self, ids: list, schedule_ids: set = None, filter_name: str = None) -> tuple:
+    async def get_entities(self, ids: list, schedule_ids: set = None) -> tuple:
         # result vars
         result = []
         errors = []
 
-        # conditions by select users
-        conditions = [Schedule.creater_id == self.creater_id]
-
+        allowed_schedule_ids = self.allowed_schedule_ids
         if schedule_ids:
             # condition by allowed Schedules
-            conditions.append(Schedule.id == any_(schedule_ids))
-
-        # allowed schedules
-        allow_schedule_items = await Schedule.select_where(
-            cls_fields=[Schedule.id],
-            conditions=conditions
-        )
-
-        # allowed schedules ids
-        allow_schedule_ids = [schedule_item['id'] for schedule_item in allow_schedule_items]
+            allowed_schedule_ids = self.allowed_schedule_ids.intersection(schedule_ids)
 
         # conditions for select details, by allowed schedule
-        conditions = [self.entity_cls.schedule_id == any_(allow_schedule_ids)]
+        conditions = [self.entity_cls.schedule_id == any_(allowed_schedule_ids)]
 
         # condition by selector ids
         if ids:
             conditions.append(self.entity_cls.id == any_(ids))
-
-        # condition by selector name
-        if filter_name:
-            conditions.append(self.entity_cls.name.contains(filter_name))
 
         # select by conditions
         records = await self.entity_cls.select_where(
@@ -76,28 +65,7 @@ class ScheduleDetailModel(BaseModel):
             conditions=conditions
         )
 
-        # ids by selected items
-        select_ids = set()
-        # format data
-        # format_result = dict()
-        # generate result list
-        for record in records:
-            select_ids.add(record['id'])
-            # format_result.setdefault(record['schedule_id'], [])
-            result.append(self.get_result_item(record, self.select_fields))
-
-        # add not selected items in errors
-        if ids:
-            # get ids not selected
-            ids = set(ids)
-            ids_diff = ids.difference(select_ids)
-            # add errors by not found ids
-            for id_diff in ids_diff:
-                errors.append(
-                    self.get_error_item(selector='id', reason='Schedule or schedule-detail is not found', value=id_diff))
-
-        # if format_result:
-        #     result.append(format_result)
+        self.calc_result(records, ids, result, errors)
 
         return result, errors
 

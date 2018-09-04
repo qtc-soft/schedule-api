@@ -8,7 +8,7 @@ from sqlalchemy.sql import any_
 class BaseModel:
     __metaclass__ = ABCMeta
 
-    def __init__(self, entity_cls, all_fields: set or list=set(), select_fields: set or list=set()):
+    def __init__(self, entity_cls, all_fields: set or list=set(), select_fields: set or list=set(), **kwargs):
         # class entity
         self.entity_cls = entity_cls
         # all fields by getting from API
@@ -30,6 +30,10 @@ class BaseModel:
         else:
             self.select_fields = set(self.all_fields)
 
+        # base conditions for all requests to db
+        self._base_conditions = kwargs.get('conditions', [])
+
+    @classmethod
     @abstractmethod
     def _get_create_schema(self) -> Schema:
         """
@@ -37,6 +41,7 @@ class BaseModel:
         :return: Schema
         """
 
+    @classmethod
     @abstractmethod
     def _get_update_schema(self) -> Schema:
         """
@@ -131,7 +136,23 @@ class BaseModel:
 
     # base conditions by select entities
     async def get_base_condition(self) -> list:
-        return []
+        return self._base_conditions
+
+    # calc results/errors by records&ids
+    def calc_result(self, records, ids, result: list, errors: list):
+        # calc result list
+        for record in records:
+            result.append(self.get_result_item(record, self.select_fields))
+            # if select by ids - remove item.if for check error-not-found
+            if ids:
+                ids.remove(record['id'])
+
+        # calc errors
+        if ids:
+            for rec_id in ids:
+                errors.append(self.get_error_item(selector='id', value=rec_id))
+
+        return result, errors
 
     # GET Entities - default method (by ids)
     async def get_entities(self, ids: list, filter_name: str=None, **kwargs) -> tuple:

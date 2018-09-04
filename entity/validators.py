@@ -80,6 +80,23 @@ class ScheduleDetailSchema(ScheduleDetailCreateSchema):
 # -- END Schedule Detail schemas --
 
 
+# -- Schedule Detail Schemas --
+# schema for create new schedule detail entity
+class OrderCreateSchema(EntityCreateSchema):
+    time = fields.Integer()
+    description = fields.String(length=200)
+    status = fields.String(50)
+    payment = fields.Boolean()
+    auto_confirm = fields.Boolean()
+    customer_id = fields.Integer()
+    schedule_id = fields.Integer()
+
+
+class OrderSchema(OrderCreateSchema):
+    id = fields.Integer()
+# -- END Schedule Detail schemas --
+
+
 # -- Customer Schemas --
 # schema for create new schedule entity
 class CustomerCreateSchema(EntityCreateSchema):

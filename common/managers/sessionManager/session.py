@@ -1,14 +1,4 @@
-from settings import logger
-from abc import ABCMeta, abstractmethod, abstractproperty, abstractclassmethod
-from settings import *
-
-
-# from marshmallow import Schema, fields, UnmarshalResult
-# TODO: Add validate data for create Session
-# schema for validate Entity for generate Session
-# class DefSchema(Schema):
-#     login = fields.String(required=True)
-#     id = fields.Integer(required=True)
+from entity import Schedule
 
 
 # base Session
@@ -74,3 +64,12 @@ class Session:
 
     def __str__(self):
         return 'Session {}. id={}, login={}, sid={}'.format(id(self), self.id, self.login, self.sid, self.flags)
+
+    # update ACL (allowed schedules)
+    async def update_acl(self):
+        self.schedule_ids = [item['id'] for item in await self._get_schedule_ids(self.id)]
+
+    @classmethod
+    # get allowed schedule-ids
+    async def _get_schedule_ids(cls, id) -> list:
+        return await Schedule.select_where(cls_fields={Schedule.id}, conditions=[Schedule.creater_id == id])

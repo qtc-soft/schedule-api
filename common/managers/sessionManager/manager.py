@@ -77,3 +77,17 @@ class SessionManager(metaclass=Singleton):
     # is admin session?
     def is_admin(self, sid) -> bool:
         return self._pool[self._sids_users[sid]][sid].is_admin if self.isset_session_by_sid(sid) else None
+
+    # update acl for Sessions by account-id, save session
+    async def update_acl_by_acc_id(self, user_id: int):
+        # list session by account-id
+        sessions = self._pool.get(user_id, {})
+        # by all account-sessions
+        for sid in sessions:
+            # session
+            session = sessions[sid]
+            # update acl
+            # TODO: This is bad code, many requests to db
+            await session.update_acl()
+            # # update in pool and save in mqtt
+            # await self.add_session(session)

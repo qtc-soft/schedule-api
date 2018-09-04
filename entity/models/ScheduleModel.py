@@ -31,16 +31,20 @@ class ScheduleModel(BaseModel):
                 'created_at',
                 'updated_at',
             ),
-            select_fields=select_fields
+            select_fields=select_fields,
+            # add base-conditions
+            conditions=[self.entity_cls.creater_id == creater_id]
         )
         # get creter id for current session
         self.creater_id = creater_id
 
     # Schema for create
+    @classmethod
     def _get_create_schema(self):
         return ScheduleCreateSchema()
 
     # Schema for update
+    @classmethod
     def _get_update_schema(self):
         return ScheduleSchema()
 
@@ -50,11 +54,8 @@ class ScheduleModel(BaseModel):
         result = []
         errors = []
 
-        # conditions by select users
-        conditions = []
-
-        # condition by allowed creaters
-        conditions.append(self.entity_cls.creater_id == self.creater_id)
+        # conditions by allowed creaters
+        conditions = self.get_base_condition()
 
         # condition by selector ids
         if ids:
@@ -70,23 +71,7 @@ class ScheduleModel(BaseModel):
             conditions=conditions
         )
 
-        # ids by selected items
-        select_ids = set()
-        # generate result list
-        for record in records:
-            select_ids.add(record['id'])
-            result.append(self.get_result_item(record, self.select_fields))
-
-        # add not selected items in errors
-        if ids:
-            # get ids not selected
-            ids = set(ids)
-            # find diff
-            ids_diff = ids.difference(select_ids)
-            # add errors by not found ids
-            for id_diff in ids_diff:
-                errors.append(
-                    self.get_error_item(selector='id', reason='Schedule is not found in database', value=id_diff))
+        self.calc_result(records, ids, result, errors)
 
         return result, errors
 

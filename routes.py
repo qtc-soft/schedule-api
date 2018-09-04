@@ -10,8 +10,6 @@ routes = [
     (METH_POST,     '/registration',     Registration),
 
     (METH_GET,      '/users/{ids}',      User),
-    # user can be created only from registration route
-    # (METH_POST,     '/users',            User),
     (METH_PUT,      '/users',            User),
     (METH_DELETE,   '/users/{ids}',      User),
 
@@ -19,6 +17,9 @@ routes = [
     (METH_POST,     '/schedules',            Schedule),
     (METH_PUT,      '/schedules',            Schedule),
     (METH_DELETE,   '/schedules/{ids}',      Schedule),
+
+    # schedule data for customers
+    (METH_GET,      '/schedule-online/{ids}',      ScheduleOnline),
 
     (METH_GET,      '/schedule-details/{ids}',      ScheduleDetail),
     (METH_POST,     '/schedule-details',            ScheduleDetail),
@@ -28,12 +29,10 @@ routes = [
     (METH_GET,      '/orders/{ids}',      Order),
     (METH_POST,     '/orders',            Order), # only for customers
     (METH_PUT,      '/orders',            Order), # only for customers
-    (METH_DELETE,   '/orders/{ids}',      Order), # not delete, change status
 
     (METH_GET,      '/customers/{ids}',      Customer), # only for users
     (METH_POST,     '/customers',            Customer), # only for customers
     (METH_PUT,      '/customers',            Customer),
-    (METH_DELETE,   '/customers/{ids}',      Customer),
 ]
 
 

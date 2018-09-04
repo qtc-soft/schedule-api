@@ -148,6 +148,7 @@ class Logout(DefaultMethodsImpl):
 class UserMethodGetParamsSchema(Schema):
     ids = fields.List(fields.Integer())
     fields = fields.List(fields.String())
+    name = fields.String()
 
 
 # Class View
@@ -155,7 +156,7 @@ class User(DefaultMethodsImpl):
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields'
+        return self.KEY_API_IDS, 'fields', 'name'
 
     @property
     # schema for validate def params
@@ -182,12 +183,54 @@ class Schedule(DefaultMethodsImpl):
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields'
+        return self.KEY_API_IDS, 'fields', 'name'
 
     @property
     # schema for validate def params
     def _params_schema(self) -> Schema:
         return UserMethodGetParamsSchema()
+
+    # get business-account
+    def get_model(self):
+        return ScheduleModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+
+    # HTTP: GET
+    async def get(self):
+        # get models
+        data = await (self.get_model()).get_entities(
+            ids=self.request_def_params['ids'],
+            filter_name=self.request.rel_url.query.get('name', None)
+        )
+
+        return web.json_response(data=dict(result=data[0], errors=data[1]))
+
+    # HTTP: POST, only tsp
+    async def post(self):
+        # json-response
+        resp = await super().post()
+
+        # update session
+        await self.session_storage.update_acl_by_acc_id(self.session.id)
+        return resp
+
+
+# schema for default get-params
+class ScheduleOnlineGetParamsSchema(Schema):
+    ids = fields.List(fields.Integer())
+    name = fields.String()
+    fields = fields.List(fields.String())
+
+
+class ScheduleOnline(DefaultMethodsImpl):
+    @property
+    # list params for generate from str (,) to list
+    def _def_params_names(self) -> tuple:
+        return self.KEY_API_IDS, 'name', 'fields'
+
+    @property
+    # schema for validate def params
+    def _params_schema(self) -> Schema:
+        return ScheduleOnlineGetParamsSchema()
 
     # get business-account
     def get_model(self):
@@ -214,7 +257,7 @@ class ScheduleDetail(DefaultMethodsImpl):
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields', 'schedules'
+        return self.KEY_API_IDS, 'schedules'
 
     @property
     # schema for validate def params
@@ -230,7 +273,6 @@ class ScheduleDetail(DefaultMethodsImpl):
         # get tags by get-params
         data = await (self.get_model()).get_entities(
             ids=self.request_def_params['ids'],
-            filter_name=self.request.rel_url.query.get('name', None),
             schedule_ids=self.request_def_params['schedules'],
         )
 
@@ -241,6 +283,7 @@ class ScheduleDetail(DefaultMethodsImpl):
 class OrderMethodGetParamsSchema(UserMethodGetParamsSchema):
     schedules = fields.List(fields.Integer())
     customers = fields.List(fields.Integer())
+    status = fields.String()
 
 
 # Class View
@@ -248,7 +291,7 @@ class Order(DefaultMethodsImpl):
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields', 'schedules', 'customers'
+        return self.KEY_API_IDS, 'status', 'schedules', 'customers'
 
     @property
     # schema for validate def params
@@ -267,6 +310,7 @@ class Order(DefaultMethodsImpl):
             filter_name=self.request.rel_url.query.get('name', None),
             schedule_ids=self.request_def_params['schedules'],
             customer_ids=self.request_def_params['customers'],
+            status=self.request_def_params['status'],
         )
 
         return web.json_response(data=dict(result=data[0], errors=data[1]))

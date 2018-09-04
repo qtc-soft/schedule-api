@@ -110,14 +110,10 @@ class OrderModel(BaseModel):
 
         # schedule id from request params
         sch_ids = data['schedule_id']
+        customer_id = data['customer_id']
 
-        # allowed schedules
-        allow_schedule_items = await Schedule.select_where(
-            cls_fields=[Schedule.id],
-            conditions=[Schedule.creater_id == self.creater_id, Schedule.id == sch_ids]
-        )
         # if schedule accessable
-        if allow_schedule_items:
+        if sch_ids and customer_id:
             result, errors = await super().create_entity(data, **kwargs)
         else:
             errors = self.get_error_item('id', 'You have not such schedule')

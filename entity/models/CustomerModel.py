@@ -4,12 +4,13 @@ from .BaseModel import BaseModel
 
 from entity.validators import CustomerCreateSchema, CustomerSchema
 from entity.customer import Customer
+from entity.order import Order
 from entity.schedule import Schedule
 
 
 # business-model by entity User
 class CustomerModel(BaseModel):
-    def __init__(self, select_fields: set=set(), creater_id: int = -1):
+    def __init__(self, allowed_schedule_ids: set, select_fields: set=set()):
         """
         :param select_fields: set, list fields for result
         """
@@ -25,8 +26,8 @@ class CustomerModel(BaseModel):
             ),
             select_fields=select_fields
         )
-        # get creter id for current session
-        self.creater_id = creater_id
+        # allowed schedules
+        self.allowed_schedule_ids = allowed_schedule_ids
 
     # Schema for create
     def _get_create_schema(self):
@@ -41,48 +42,51 @@ class CustomerModel(BaseModel):
         result = []
         errors = []
 
-        # conditions by select users
-        conditions = [Schedule.creater_id == self.creater_id]
+        # default filter customers only by ids in request
+        allowed_customer_ids = ids
 
+        # default all schedules accessable
+        allowed_schedule_ids = self.allowed_schedule_ids
+
+        # if need specific schedule data
         if schedule_ids:
             # condition by allowed Schedules
-            conditions.append(Schedule.id == any_(schedule_ids))
+            allowed_schedule_ids = self.allowed_schedule_ids.intersection(schedule_ids)
 
-        # allowed schedules
-        allow_schedule_items = await Schedule.select_where(
-            cls_fields=[Schedule.id],
-            conditions=conditions
-        )
+            # get orders for some schedules
+            order_items = await Order.select_where(
+                cls_fields=[Order.id, Order.schedule_id],
+                conditions=[Order.schedule_id == any_(allowed_schedule_ids)]
+            )
+            # get customer ids form orders
+            allowed_customer_ids = [order_item['customer_id'] for order_item in order_items]
+            if ids:
+                allowed_customer_ids = allowed_customer_ids.intersection(ids)
 
-        # allowed schedules ids
-        allow_schedule_ids = [schedule_item['id'] for schedule_item in allow_schedule_items]
 
-        # conditions for select details, by allowed schedule
-        conditions = [self.entity_cls.schedule_id == any_(allow_schedule_ids)]
+        # base conditions
+        conditions = self.get_base_condition()
 
         # condition by selector ids
-        if ids:
-            conditions.append(self.entity_cls.id == any_(ids))
+        if allowed_customer_ids:
+            conditions.append(self.entity_cls.id == any_(allowed_customer_ids))
 
         # condition by selector name
         if filter_name:
             conditions.append(self.entity_cls.name.contains(filter_name))
 
         # select by conditions
-        records = await self.entity_cls.select_where(
+        customer_items = await self.entity_cls.select_where(
             str_fields=self.select_fields,
             conditions=conditions
         )
 
-        # ids by selected items
-        select_ids = set()
         # format data
         format_result = dict()
         # generate result list
-        for record in records:
-            select_ids.add(record['id'])
-            format_result.setdefault(record['schedule_id'], [])
-            format_result[record['schedule_id']].append(self.get_result_item(record, self.select_fields))
+        for customer_item in customer_items:
+            format_result.setdefault(customer_item['schedule_id'], [])
+            format_result[customer_item['schedule_id']].append(self.get_result_item(customer_item, self.select_fields))
 
         # add not selected items in errors
         if ids:

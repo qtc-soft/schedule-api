@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint
 
 from datetime import datetime
 from .base import Base, BaseEntity
@@ -15,8 +15,12 @@ class Customer(Base, BaseEntity):
     name = Column(String(length=100))
     # tel
     phone = Column(String(20), unique=True, nullable=False)
+    # confirm phone value
+    phone_confirm = Column(Boolean, default=False)
     # email
     email = Column(String(50), unique=True)
+    # confirm phone value
+    email_confirm = Column(Boolean, default=False)
     # time created
     created_at = Column(Integer, default=int(datetime.now().timestamp()))
     # time updated

@@ -5,7 +5,7 @@ from core.exceptions import IncorrectParamsException
 from core.web_view import DefaultMethodsImpl
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
-from entity.models.ScheduleModel import ScheduleModel
+from entity.models.ScheduleModel import ScheduleModel, ScheduleOnlineModel
 from entity.models.ScheduleDetailModel import ScheduleDetailModel
 from entity.models.OrderModel import OrderModel
 from entity.models.CustomerModel import CustomerModel
@@ -192,7 +192,7 @@ class Schedule(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return ScheduleModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+        return ScheduleModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):
@@ -234,7 +234,7 @@ class ScheduleOnline(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return ScheduleModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+        return ScheduleOnlineModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):
@@ -266,7 +266,7 @@ class ScheduleDetail(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return ScheduleDetailModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+        return ScheduleDetailModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):
@@ -300,7 +300,7 @@ class Order(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return OrderModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+        return OrderModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):
@@ -316,21 +316,28 @@ class Order(DefaultMethodsImpl):
         return web.json_response(data=dict(result=data[0], errors=data[1]))
 
 
+# schema for default get-params
+class CustomerMethodGetParamsSchema(UserMethodGetParamsSchema):
+    fields = fields.List(fields.String())
+    name = fields.String(100)
+    schedules = fields.List(fields.Integer())
+
+
 # class View
 class Customer(DefaultMethodsImpl):
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields', 'schedules'
+        return self.KEY_API_IDS, 'fields', 'name', 'schedules'
 
     @property
     # schema for validate def params
     def _params_schema(self) -> Schema:
-        return ScheduleDetailMethodGetParamsSchema()
+        return CustomerMethodGetParamsSchema()
 
     # get business-account
     def get_model(self):
-        return CustomerModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+        return CustomerModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):

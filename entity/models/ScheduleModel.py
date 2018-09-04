@@ -9,7 +9,7 @@ from entity.schedule import Schedule
 from common.managers.sessionManager import SessionManager
 
 
-# business-model by entity User
+# schedule for Users
 class ScheduleModel(BaseModel):
     def __init__(self, select_fields: set=set(), creater_id: int = -1):
         """
@@ -91,3 +91,70 @@ class ScheduleModel(BaseModel):
 
         # run method in BaseModel
         return await super().update_entity(data)
+
+
+# schedule for Customers
+class ScheduleOnlineModel(BaseModel):
+    def __init__(self, select_fields: set=set(), creater_id: int = -1):
+        """
+        :param select_fields: set, list fields for result
+        """
+        super().__init__(
+            entity_cls=Schedule,
+            all_fields=(
+                'id',
+                'name',
+                'description',
+                'email',
+                'phone',
+                'country_id',
+                'city_id',
+                'address',
+                'flags',
+                'data',
+                'created_at',
+                'updated_at',
+            ),
+            select_fields=select_fields,
+            # add base-conditions
+            conditions=[self.entity_cls.creater_id == creater_id]
+        )
+        # get creter id for current session
+        self.creater_id = creater_id
+
+    # Schema for create
+    @classmethod
+    def _get_create_schema(self):
+        return ScheduleCreateSchema()
+
+    # Schema for update
+    @classmethod
+    def _get_update_schema(self):
+        return ScheduleSchema()
+
+    # GET Entity
+    async def get_entities(self, ids: list, filter_name: str = None) -> tuple:
+        # result vars
+        result = []
+        errors = []
+
+        # conditions by allowed creaters
+        conditions = self.get_base_condition()
+
+        # condition by selector ids
+        if ids:
+            conditions.append(self.entity_cls.id == any_(ids))
+
+        # condition by selector name
+        if filter_name:
+            conditions.append(self.entity_cls.name.contains(filter_name))
+
+        # select by conditions
+        records = await self.entity_cls.select_where(
+            str_fields=self.select_fields,
+            conditions=conditions
+        )
+
+        self.calc_result(records, ids, result, errors)
+
+        return result, errors

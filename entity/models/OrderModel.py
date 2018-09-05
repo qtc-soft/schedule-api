@@ -9,7 +9,7 @@ from entity.order import Order
 
 # business-model by entity User
 class OrderModel(BaseModel):
-    def __init__(self, select_fields: set=set(), creater_id: int = -1):
+    def __init__(self, allowed_schedule_ids: set, select_fields: set=set(), creater_id: int = -1):
         """
         :param select_fields: set, list fields for result
         """
@@ -31,6 +31,8 @@ class OrderModel(BaseModel):
         )
         # get creter id for current session
         self.creater_id = creater_id
+        # allowed schedules
+        self.allowed_schedule_ids = allowed_schedule_ids
 
     # Schema for create
     def _get_create_schema(self):

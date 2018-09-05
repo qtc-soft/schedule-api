@@ -73,10 +73,9 @@ class ScheduleDetailModel(BaseModel):
     async def create_entity(self, data: dict, **kwargs) -> tuple:
         # result vars
         result = []
-        errors = []
 
         # schedule id from request params
-        sch_id = data['schedule_id']
+        sch_id = data.get('schedule_id', -1)
 
         # if schedule accessable
         if sch_id in self.allowed_schedule_ids:
@@ -94,7 +93,7 @@ class ScheduleDetailModel(BaseModel):
         errors = []
 
         # schedule id from request params
-        sch_id = data['schedule_id']
+        sch_id = data.get('schedule_id', -1)
 
         # if schedule accessable
         if sch_id in self.allowed_schedule_ids:

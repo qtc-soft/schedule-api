@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, types, UniqueConstraint
 
 from datetime import datetime
 from .base import Base, BaseEntity
-from .order import Order
 
 
 # Entity Customer
@@ -21,6 +20,14 @@ class Customer(Base, BaseEntity):
     email = Column(String(50), unique=True)
     # confirm phone value
     email_confirm = Column(Boolean, default=False)
+    # mail agreement
+    mail_agreement = Column(Boolean, default=True)
+    # address
+    address = Column(String(length=200))
+    # access flags, for block set 0
+    flags = Column(Integer, default=0)
+    # user settings
+    data = Column(types.JSON)
     # time created
     created_at = Column(Integer, default=int(datetime.now().timestamp()))
     # time updated

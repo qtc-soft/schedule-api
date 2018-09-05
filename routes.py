@@ -5,9 +5,14 @@ from controller import *
 # list of a routes in application and it's handlers
 routes = [
     (METH_GET,      '',                  ApiHelper),
-    (METH_POST,     '/login',            Login),
-    (METH_POST,     '/logout',           Logout),
-    (METH_POST,     '/registration',     Registration),
+
+    (METH_POST,     '/user-login',            UserLogin),
+    (METH_POST,     '/user-logout',           UserLogout),
+    (METH_POST,     '/user-registration',     UserRegistration),
+
+    (METH_POST,     '/custom-login',            CustomLogin),
+    (METH_POST,     '/custom-logout',           CustomLogout),
+    (METH_POST,     '/custom-registration',     CustomRegistration),
 
     (METH_GET,      '/users/{ids}',      User),
     (METH_PUT,      '/users',            User),

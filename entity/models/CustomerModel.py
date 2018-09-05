@@ -45,9 +45,6 @@ class CustomerModel(BaseModel):
         # default filter customers only by ids in request
         allowed_customer_ids = ids
 
-        # default all schedules accessable
-        allowed_schedule_ids = self.allowed_schedule_ids
-
         # if need specific schedule data
         if schedule_ids:
             # condition by allowed Schedules
@@ -63,7 +60,6 @@ class CustomerModel(BaseModel):
             if ids:
                 allowed_customer_ids = allowed_customer_ids.intersection(ids)
 
-
         # base conditions
         conditions = self.get_base_condition()
 
@@ -76,72 +72,11 @@ class CustomerModel(BaseModel):
             conditions.append(self.entity_cls.name.contains(filter_name))
 
         # select by conditions
-        customer_items = await self.entity_cls.select_where(
+        records = await self.entity_cls.select_where(
             str_fields=self.select_fields,
             conditions=conditions
         )
 
-        # format data
-        format_result = dict()
-        # generate result list
-        for customer_item in customer_items:
-            format_result.setdefault(customer_item['schedule_id'], [])
-            format_result[customer_item['schedule_id']].append(self.get_result_item(customer_item, self.select_fields))
+        self.calc_result(records, ids, result, errors)
 
-        # add not selected items in errors
-        if ids:
-            # get ids not selected
-            ids = set(ids)
-            ids_diff = ids.difference(select_ids)
-            # add errors by not found ids
-            for id_diff in ids_diff:
-                errors.append(
-                    self.get_error_item(selector='id', reason='Customer or schedule-detail is not found', value=id_diff))
-        result.append(format_result)
-        return result, errors
-
-    # CREATE Entity
-    async def create_entity(self, data: dict, **kwargs) -> tuple:
-        # result vars
-        result = []
-        errors = []
-
-        # schedule id from request params
-        sch_ids = data['schedule_id']
-
-        # allowed schedules
-        allow_schedule_items = await Customer.select_where(
-            cls_fields=[Customer.id],
-            conditions=[Customer.creater_id == self.creater_id, Customer.id == sch_ids]
-        )
-        # if schedule accessable
-        if allow_schedule_items:
-            result, errors = await super().create_entity(data, **kwargs)
-        else:
-            errors = self.get_error_item('id', 'You have not such schedule')
-
-        # get entites
-        return result, errors
-
-    # UPDATE Entity
-    async def update_entity(self, data: dict, **kwargs) -> tuple:
-        # result vars
-        result = []
-        errors = []
-
-        # schedule id from request params
-        sch_ids = data['schedule_id']
-
-        # allowed schedules
-        allow_schedule_items = await Customer.select_where(
-            cls_fields=[Customer.id],
-            conditions=[Customer.creater_id == self.creater_id, Customer.id == sch_ids]
-        )
-        # if schedule accessable
-        if allow_schedule_items:
-            result, errors = await super().update_entity(data, **kwargs)
-        else:
-            errors = self.get_error_item('id', 'You have not such schedule')
-
-        # get entites
         return result, errors

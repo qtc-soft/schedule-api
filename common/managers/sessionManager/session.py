@@ -1,5 +1,6 @@
 from entity import Schedule
 
+ACL = dict(USER=0x1, CUSTOMER=0x1000)
 
 # base Session
 class Session:

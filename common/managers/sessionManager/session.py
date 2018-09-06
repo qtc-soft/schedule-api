@@ -4,28 +4,30 @@ ACL = dict(USER=0x1, CUSTOMER=0x1000)
 
 # base Session
 class Session:
-    __slots__ = 'id', 'login', 'name', 'sid', 'email', 'phone', 'description', 'flags'
+    __slots__ = 'id', 'login', 'name', 'sid', 'email', 'phone', 'description', 'flags', 'schedule_ids'
 
     # load data from dict/object or kwargs
     def __init__(self, data: dict={}, **kwargs):
         # init object
         super().__init__()
         # int
-        self.id = None
+        self.id = -1
         # str
-        self.login = None
+        self.login = ''
         # str
-        self.name = None
+        self.name = ''
         # str
-        self.email = None
+        self.email = ''
         # str
-        self.phone = None
+        self.phone = ''
         # str
-        self.description = None
+        self.description = ''
         # int
         self.flags = 0
         # str
         self.sid = None
+        #
+        self.schedule_ids = []
 
         # set attrs from data-dict
         if data:

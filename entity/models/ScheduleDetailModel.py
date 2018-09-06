@@ -52,7 +52,7 @@ class ScheduleDetailModel(BaseModel):
             allowed_schedule_ids = self.allowed_schedule_ids.intersection(schedule_ids)
 
         # conditions for select details, by allowed schedule
-        conditions = [self.entity_cls.schedule_id == any_(allowed_schedule_ids)]
+        conditions = [self.entity_cls.schedule_id == any_(allowed_schedule_ids)] if ids else []
 
         # condition by selector ids
         if ids:
@@ -67,21 +67,31 @@ class ScheduleDetailModel(BaseModel):
         # self.calc_result(detail_items, ids, result, errors)
 
         order_items = await Order.select_where(
-            cls_fields=[Order.id, Order.time, Order.members],
+            cls_fields=[Order.id, Order.time],
             conditions=[Order.schedule_id == any_(allowed_schedule_ids)]
         )
 
-        format_result = {}
-        # TODO продумать JSON ответа, по id расписания и по времени деталей
+        format_result = dict()
+        #  ---- result data format ----
+        # schedule_id: {
+        #   time: {
+        #       orders: [],
+        #       details: []
+        #   }
+        # }
+        #  ----------------------------
         # format details
         for detail_item in detail_items:
-            format_result.setdefault(detail_item['schedule_id'], dict(details=list(), orders=list()))
-            format_result[detail_item['schedule_id']].details.add(detail_item)
+            format_result_data = format_result.setdefault(detail_item['schedule_id'], dict())
+            format_result_data.setdefault(detail_item['time'], dict(orders=list(), details=list()))
+            format_result[detail_item['schedule_id']][detail_item['time']]['details'].append(detail_item)
 
         # format orders
         for order_item in order_items:
-            if format_result[order_item['schedule_id']]:
+            if format_result[order_item['schedule_id']] and format_result[order_item['schedule_id']][order_item['time']]:
                 format_result[order_item['schedule_id']].orders.add(order_item)
+
+        result.append(format_result)
 
         return result, errors
 
@@ -97,7 +107,7 @@ class ScheduleDetailModel(BaseModel):
         if sch_id in self.allowed_schedule_ids:
             result, errors = await super().create_entity(data, **kwargs)
         else:
-            errors = self.get_error_item('id', 'You have not such schedule')
+            errors = self.get_error_item('id', 'Access denied...')
 
         # get entites
         return result, errors

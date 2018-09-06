@@ -17,7 +17,9 @@ class AuthModel:
         )
         # if isset
         if u:
-            session_data = SessionManager().generate_session(data=dict(u[0]))
+            # create session
+            session_data = await SessionManager().generate_session(data=dict(u[0]))
+
             result = dict(sid=session_data.sid, name=session_data.name, login=session_data.login, email=session_data.email, phone=session_data.phone)
 
         return result

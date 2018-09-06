@@ -59,6 +59,7 @@ class ScheduleCreateSchema(EntityCreateSchema):
     address = fields.String(length=200)
     data = fields.Dict()
     flags = fields.Integer()
+    activate = fields.Boolean()
 
 
 class ScheduleSchema(ScheduleCreateSchema):

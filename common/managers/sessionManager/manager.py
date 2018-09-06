@@ -29,7 +29,7 @@ class SessionManager(metaclass=Singleton):
         self._sids_users = dict()
 
     # generate session by user_platform-type
-    def generate_session(self, data: dict) -> Session:
+    async def generate_session(self, data: dict) -> Session:
         """ Generate new session by Entity-data. Return sid """
         # new session
         result = Session(data, sid=self.generate_sid())
@@ -37,6 +37,9 @@ class SessionManager(metaclass=Singleton):
         # save to pool
         self.add_session(result)
         logger.debug('Login: {}'.format(result))
+
+        if result and result.id >= 0:
+            await self.update_acl_by_acc_id(result.id)
 
         return result
 
@@ -89,5 +92,3 @@ class SessionManager(metaclass=Singleton):
             # update acl
             # TODO: This is bad code, many requests to db
             await session.update_acl()
-            # # update in pool and save in mqtt
-            # await self.add_session(session)

@@ -11,7 +11,7 @@ from common.managers.sessionManager import SessionManager
 
 # schedule for Users
 class ScheduleModel(BaseModel):
-    def __init__(self, select_fields: set=set(), creater_id: int = -1):
+    def __init__(self, allowed_schedule_ids: set, select_fields: set=set(), creater_id: int = -1):
         """
         :param select_fields: set, list fields for result
         """
@@ -26,14 +26,10 @@ class ScheduleModel(BaseModel):
                 'country_id',
                 'city_id',
                 'address',
-                'flags',
-                'data',
-                'created_at',
-                'updated_at',
+                'activate',
             ),
             select_fields=select_fields,
-            # add base-conditions
-            conditions=[self.entity_cls.creater_id == creater_id]
+            conditions=[Schedule.activate == True]
         )
         # get creter id for current session
         self.creater_id = creater_id
@@ -55,7 +51,7 @@ class ScheduleModel(BaseModel):
         errors = []
 
         # conditions by allowed creaters
-        conditions = self.get_base_condition()
+        conditions = await self.get_base_condition()
 
         # condition by selector ids
         if ids:

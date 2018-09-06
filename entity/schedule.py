@@ -27,10 +27,11 @@ class Schedule(Base, BaseEntity):
     # address
     address = Column(String(length=200))
     # access flags, default 1
-    # 0x1 - deactivate schedule
     flags = Column(Integer, default=1)
     # some schedule settings, field for free data or schedule settings
     data = Column(types.JSON)
+    # activate or deactivate
+    activate = Column(Boolean, nullable=False, default=True)
     # time created
     created_at = Column(Integer, default=int(datetime.now().timestamp()))
     # time updated

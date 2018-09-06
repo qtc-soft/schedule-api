@@ -5,6 +5,7 @@ from core.exceptions import IncorrectParamsException
 from core.web_view import DefaultMethodsImpl
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
+from entity.models.CustomAuthModel import CustomAuthModel
 from entity.models.ScheduleModel import ScheduleModel, ScheduleOnlineModel
 from entity.models.ScheduleDetailModel import ScheduleDetailModel
 from entity.models.OrderModel import OrderModel
@@ -271,7 +272,6 @@ class CustomLogout(DefaultMethodsImpl):
 class UserMethodGetParamsSchema(Schema):
     ids = fields.List(fields.Integer())
     fields = fields.List(fields.String())
-    name = fields.String()
 
 
 # Class View
@@ -279,7 +279,7 @@ class User(DefaultMethodsImpl):
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields', 'name'
+        return self.KEY_API_IDS, 'fields'
 
     @property
     # schema for validate def params
@@ -327,13 +327,15 @@ class Schedule(DefaultMethodsImpl):
 
         return web.json_response(data=dict(result=data[0], errors=data[1]))
 
-    # HTTP: POST, only tsp
+    # HTTP: POST, only for User
     async def post(self):
         # json-response
         resp = await super().post()
 
-        # update session
-        await self.session_storage.update_acl_by_acc_id(self.session.id)
+        if self.session and self.session.id:
+            # update session
+            await self.session_storage.update_acl_by_acc_id(self.session.id)
+
         return resp
 
 
@@ -380,7 +382,7 @@ class ScheduleDetail(DefaultMethodsImpl):
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'schedules'
+        return self.KEY_API_IDS, 'schedules', 'fields'
 
     @property
     # schema for validate def params
@@ -389,7 +391,7 @@ class ScheduleDetail(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return ScheduleDetailModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
+        return ScheduleDetailModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.get('schedule_ids', list()), creater_id=self.session.get('id', -1))
 
     # HTTP: GET
     async def get(self):
@@ -441,8 +443,6 @@ class Order(DefaultMethodsImpl):
 
 # schema for default get-params
 class CustomerMethodGetParamsSchema(UserMethodGetParamsSchema):
-    fields = fields.List(fields.String())
-    name = fields.String(100)
     schedules = fields.List(fields.Integer())
 
 
@@ -451,7 +451,7 @@ class Customer(DefaultMethodsImpl):
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields', 'name', 'schedules'
+        return self.KEY_API_IDS, 'fields', 'schedules'
 
     @property
     # schema for validate def params

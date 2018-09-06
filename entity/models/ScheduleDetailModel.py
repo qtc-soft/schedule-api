@@ -5,6 +5,7 @@ from .BaseModel import BaseModel
 from entity.validators import ScheduleDetailCreateSchema, ScheduleDetailSchema
 from entity.schedule import Schedule
 from entity.schDetail import SCHDetail
+from entity.order import Order
 
 
 # business-model by entity User
@@ -21,8 +22,6 @@ class ScheduleDetailModel(BaseModel):
                 'description',
                 'members',
                 'schedule_id',
-                'created_at',
-                'updated_at',
             ),
             select_fields=select_fields
         )
@@ -60,12 +59,29 @@ class ScheduleDetailModel(BaseModel):
             conditions.append(self.entity_cls.id == any_(ids))
 
         # select by conditions
-        records = await self.entity_cls.select_where(
+        detail_items = await self.entity_cls.select_where(
             str_fields=self.select_fields,
             conditions=conditions
         )
 
-        self.calc_result(records, ids, result, errors)
+        # self.calc_result(detail_items, ids, result, errors)
+
+        order_items = await Order.select_where(
+            cls_fields=[Order.id, Order.time, Order.members],
+            conditions=[Order.schedule_id == any_(allowed_schedule_ids)]
+        )
+
+        format_result = {}
+        # TODO продумать JSON ответа, по id расписания и по времени деталей
+        # format details
+        for detail_item in detail_items:
+            format_result.setdefault(detail_item['schedule_id'], dict(details=list(), orders=list()))
+            format_result[detail_item['schedule_id']].details.add(detail_item)
+
+        # format orders
+        for order_item in order_items:
+            if format_result[order_item['schedule_id']]:
+                format_result[order_item['schedule_id']].orders.add(order_item)
 
         return result, errors
 

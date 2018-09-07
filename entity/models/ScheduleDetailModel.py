@@ -84,14 +84,15 @@ class ScheduleDetailModel(BaseModel):
         for detail_item in detail_items:
             format_result_data = format_result.setdefault(detail_item['schedule_id'], dict())
             format_result_data.setdefault(detail_item['time'], dict(orders=list(), details=list()))
-            format_result[detail_item['schedule_id']][detail_item['time']]['details'].append(detail_item)
+            format_result[detail_item['schedule_id']][detail_item['time']]['details'].append(self.get_result_item(detail_item, self.select_fields))
 
         # format orders
         for order_item in order_items:
             if format_result[order_item['schedule_id']] and format_result[order_item['schedule_id']][order_item['time']]:
                 format_result[order_item['schedule_id']].orders.add(order_item)
 
-        result.append(format_result)
+        if format_result:
+            result.append(format_result)
 
         return result, errors
 

@@ -45,7 +45,7 @@ class ExtendedApiView(web.View, metaclass=ABCMeta):
 
         # if not login generate default session
         if not self._session:
-            self._session = dict()
+            self._session = self.session_storage.generate_empty_session()
 
         # if self.is_auth and not self._session:
         #     # error access denied

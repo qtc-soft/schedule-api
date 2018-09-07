@@ -43,6 +43,10 @@ class SessionManager(metaclass=Singleton):
 
         return result
 
+    def generate_empty_session(self):
+        result = Session(dict(), sid = -1)
+        return result
+
     # add session to pool
     def add_session(self, session: Session):
         # save session: user-id:sid:dict

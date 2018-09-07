@@ -391,7 +391,7 @@ class ScheduleDetail(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return ScheduleDetailModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.get('schedule_ids', list()), creater_id=self.session.get('id', -1))
+        return ScheduleDetailModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):

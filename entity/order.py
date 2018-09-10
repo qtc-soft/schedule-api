@@ -28,7 +28,7 @@ class Order(Base, BaseEntity):
     # order time must be equal time from schedule details
     time = Column(Integer, nullable=False)
     # schedule
-    schedule_id = Column(Integer, ForeignKey('Schedules.id'), nullable=False)
+    schedule_id = Column(Integer, ForeignKey('Schedules.id', ondelete='CASCADE'), nullable=False)
     #
     customer_id = Column(Integer, ForeignKey('Customers.id'), nullable=False)
     # description from customer

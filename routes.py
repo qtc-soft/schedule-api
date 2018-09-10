@@ -21,7 +21,7 @@ routes = [
     (METH_GET,      '/schedules/{ids}',      Schedule),
     (METH_POST,     '/schedules',            Schedule),
     (METH_PUT,      '/schedules',            Schedule),
-    # (METH_DELETE,   '/schedules/{ids}',      Schedule),
+    (METH_DELETE,   '/schedules/{ids}',      Schedule),
 
     # schedule data for customers
     (METH_GET,      '/schedule-online/{ids}',      ScheduleOnline),

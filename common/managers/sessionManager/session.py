@@ -66,7 +66,7 @@ class Session:
         )
 
     def __str__(self):
-        return 'Session {}. id={}, login={}, sid={}'.format(id(self), self.id, self.login, self.sid, self.flags)
+        return 'Session {}. id={}, login={}, sid={}, flags={}, schedule_ids={}'.format(id(self), self.id, self.login, self.sid, self.flags, self.schedule_ids)
 
     # update ACL (allowed schedules)
     async def update_acl(self):
@@ -75,4 +75,5 @@ class Session:
     @classmethod
     # get allowed schedule-ids
     async def _get_schedule_ids(cls, id) -> list:
-        return await Schedule.select_where(cls_fields={Schedule.id}, conditions=[Schedule.creater_id == id])
+        res = await Schedule.select_where(cls_fields={Schedule.id}, conditions=[Schedule.creater_id == id])
+        return res

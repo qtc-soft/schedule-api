@@ -2,7 +2,7 @@ from aiohttp import web
 import ujson
 
 from core.exceptions import IncorrectParamsException
-from core.web_view import DefaultMethodsImpl
+from core.web_view import DefaultMethodsImpl, ExtendedApiView
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
 from entity.models.CustomAuthModel import CustomAuthModel
@@ -268,6 +268,19 @@ class CustomLogout(DefaultMethodsImpl):
         return resp
 
 
+# Class View
+class IsAuth (ExtendedApiView):
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        return {}
+
+    async def post(self):
+        # sid from header
+        request_sid = self.request.headers.get('X-AccessToken')
+        # return json-response
+        return web.json_response(data=dict(result=[dict(access=bool(self.session.sid == request_sid))], errors=[]))
+
+
 # schema for default get-params
 class UserMethodGetParamsSchema(Schema):
     ids = fields.List(fields.Integer())
@@ -359,7 +372,7 @@ class ScheduleOnline(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self):
-        return ScheduleOnlineModel(select_fields=self.request_def_params['fields'], creater_id=self.session.id)
+        return ScheduleOnlineModel(select_fields=self.request_def_params['fields'])
 
     # HTTP: GET
     async def get(self):

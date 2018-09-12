@@ -49,23 +49,15 @@ class OrderModel(BaseModel):
         errors = []
 
         # conditions by select users
-        conditions = [Schedule.creater_id == self.creater_id]
+        conditions = await self._get_base_condition()
 
+        allowed_schedule_ids = self.allowed_schedule_ids
         if schedule_ids:
             # condition by allowed Schedules
-            conditions.append(Schedule.id == any_(schedule_ids))
-
-        # allowed schedules
-        allow_schedule_items = await Schedule.select_where(
-            cls_fields=[Schedule.id],
-            conditions=conditions
-        )
-
-        # allowed schedules ids
-        allow_schedule_ids = [schedule_item['id'] for schedule_item in allow_schedule_items]
+            allowed_schedule_ids = self.allowed_schedule_ids.intersection(schedule_ids)
 
         # conditions for select details, by allowed schedule
-        conditions = [self.entity_cls.schedule_id == any_(allow_schedule_ids)]
+        conditions = [self.entity_cls.schedule_id == any_(allowed_schedule_ids)]
 
         # condition by selector ids
         if ids:
@@ -78,6 +70,10 @@ class OrderModel(BaseModel):
         # condition by selector name
         if filter_name:
             conditions.append(self.entity_cls.name.contains(filter_name))
+
+        # condition by order status
+        if status:
+            conditions.append(self.entity_cls.status.contains(status))
 
         # select by conditions
         records = await self.entity_cls.select_where(
@@ -93,14 +89,7 @@ class OrderModel(BaseModel):
             result.append(self.get_result_item(record, self.select_fields))
 
         # add not selected items in errors
-        if ids:
-            # get ids not selected
-            ids = set(ids)
-            ids_diff = ids.difference(select_ids)
-            # add errors by not found ids
-            for id_diff in ids_diff:
-                errors.append(
-                    self.get_error_item(selector='id', reason='Schedule or schedule-detail is not found', value=id_diff))
+            self.calc_result(records, ids, result, errors)
 
         return result, errors
 

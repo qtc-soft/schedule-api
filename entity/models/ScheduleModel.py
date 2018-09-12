@@ -29,10 +29,13 @@ class ScheduleModel(BaseModel):
                 'activate',
             ),
             select_fields=select_fields,
-            conditions=[Schedule.activate == True]
+            # base conditions
+            conditions=[Schedule.creater_id == creater_id]
         )
         # get creter id for current session
-        self.creater_id = creater_id
+        self.creater_id = creater_id,
+        # allowed schedules
+        self.allowed_schedule_ids = allowed_schedule_ids
 
     # Schema for create
     @classmethod
@@ -51,7 +54,7 @@ class ScheduleModel(BaseModel):
         errors = []
 
         # conditions by allowed creaters
-        conditions = await self.get_base_condition()
+        conditions = await self._get_base_condition()
 
         # condition by selector ids
         if ids:
@@ -91,7 +94,7 @@ class ScheduleModel(BaseModel):
 
 # schedule for Customers
 class ScheduleOnlineModel(BaseModel):
-    def __init__(self, select_fields: set=set(), creater_id: int = -1):
+    def __init__(self, select_fields: set=set()):
         """
         :param select_fields: set, list fields for result
         """
@@ -113,10 +116,8 @@ class ScheduleOnlineModel(BaseModel):
             ),
             select_fields=select_fields,
             # add base-conditions
-            conditions=[self.entity_cls.creater_id == creater_id]
+            conditions=[Schedule.activate == True]
         )
-        # get creter id for current session
-        self.creater_id = creater_id
 
     # Schema for create
     @classmethod
@@ -129,13 +130,13 @@ class ScheduleOnlineModel(BaseModel):
         return ScheduleSchema()
 
     # GET Entity
-    async def get_entities(self, ids: list, filter_name: str = None) -> tuple:
+    async def get_entities(self, ids: list, filter_name: str = None, creater_ids: set = None) -> tuple:
         # result vars
         result = []
         errors = []
 
         # conditions by allowed creaters
-        conditions = self.get_base_condition()
+        conditions = await self._get_base_condition()
 
         # condition by selector ids
         if ids:
@@ -144,6 +145,10 @@ class ScheduleOnlineModel(BaseModel):
         # condition by selector name
         if filter_name:
             conditions.append(self.entity_cls.name.contains(filter_name))
+
+        # condition by selector name
+        if creater_ids:
+            conditions.append(self.entity_cls.id == any_(creater_ids))
 
         # select by conditions
         records = await self.entity_cls.select_where(

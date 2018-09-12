@@ -46,17 +46,18 @@ class ScheduleDetailModel(BaseModel):
         result = []
         errors = []
 
-        allowed_schedule_ids = self.allowed_schedule_ids
-        if schedule_ids:
-            # condition by allowed Schedules
-            allowed_schedule_ids = self.allowed_schedule_ids.intersection(schedule_ids)
-
         # conditions for select details, by allowed schedule
-        conditions = [self.entity_cls.schedule_id == any_(allowed_schedule_ids)] if ids else []
+        conditions = await self._get_base_condition()
 
         # condition by selector ids
         if ids:
             conditions.append(self.entity_cls.id == any_(ids))
+
+        # condition by schedule_ids
+        if schedule_ids:
+            # get intersection schedules
+            schedule_ids = list(set(self.allowed_schedule_ids) & set(schedule_ids))
+            conditions.append(self.entity_cls.schedule_id == any_(schedule_ids))
 
         # select by conditions
         detail_items = await self.entity_cls.select_where(
@@ -64,22 +65,22 @@ class ScheduleDetailModel(BaseModel):
             conditions=conditions
         )
 
-        # self.calc_result(detail_items, ids, result, errors)
+        allowed_sch_ids = [detail_items['schedule_id'] for detail_item in detail_items]
 
         order_items = await Order.select_where(
             cls_fields=[Order.id, Order.time],
-            conditions=[Order.schedule_id == any_(allowed_schedule_ids)]
+            conditions=[Order.schedule_id == any_(allowed_sch_ids)]
         )
 
         format_result = dict()
+
         #  ---- result data format ----
         # schedule_id: {
-        #   time: {
-        #       orders: [],
-        #       details: []
-        #   }
+        #   orders: [],
+        #   details: []
         # }
         #  ----------------------------
+
         # format details
         for detail_item in detail_items:
             format_result_data = format_result.setdefault(detail_item['schedule_id'], dict(orders=list(), details=list()))

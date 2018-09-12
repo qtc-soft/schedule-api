@@ -36,11 +36,10 @@ class SessionManager(metaclass=Singleton):
 
         # save to pool
         self.add_session(result)
+
+        await self.update_acl_by_acc_id(result.id)
+
         logger.debug('Login: {}'.format(result))
-
-        if result and result.id >= 0:
-            await self.update_acl_by_acc_id(result.id)
-
         return result
 
     def generate_empty_session(self):

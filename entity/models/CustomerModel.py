@@ -61,7 +61,7 @@ class CustomerModel(BaseModel):
                 allowed_customer_ids = allowed_customer_ids.intersection(ids)
 
         # base conditions
-        conditions = self.get_base_condition()
+        conditions = await self._get_base_condition()
 
         # condition by selector ids
         if allowed_customer_ids:

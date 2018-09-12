@@ -27,9 +27,7 @@ class UserModel(BaseModel):
                 'address',
                 'mail_agreement',
                 'flags',
-                'data',
-                'created_at',
-                'updated_at',
+                'data'
             ),
             select_fields=select_fields
         )

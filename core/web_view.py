@@ -43,13 +43,9 @@ class ExtendedApiView(web.View, metaclass=ABCMeta):
         # authentification-Session
         self._session = self.session_storage.get_session_by_sid(get_auth_token_from_request(self.request, self.auth_header_name))
 
-        # if not login generate default session
-        if not self._session:
-            self._session = self.session_storage.generate_empty_session()
-
-        # if self.is_auth and not self._session:
-        #     # error access denied
-        #     raise AccessException('Access denied. Session is closed.')
+        if self.is_auth and not self._session:
+            # error access denied
+            raise AccessException('Access denied. Session is closed.')
 
     @property
     # storage sessions

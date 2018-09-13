@@ -161,24 +161,25 @@ class BaseModel:
         # result errors
         errors = []
 
-        # TODO: Add to v_data from kwargs or not??
         # validate-data
         if validate:
-            v_data, errs = self.validate_for_create(data)
-            if errs:
-                errors.extend(errs)
+            v_data = (self._get_create_schema()).load(data)
+            if v_data.errors:
+                errors.extend(v_data.errors)
+            else:
+                v_data = data
         else:
             v_data = data
 
         # create record
         if not errors and v_data:
             # create and get result
-            new_entity_data, msg = await self.entity_cls.create(values=v_data, return_fields=self.select_fields)
+            new_entity_data = await self.entity_cls.create(values=v_data, return_fields=self.select_fields)
             # add to result
             if new_entity_data:
                 result = self.get_result_item(new_entity_data, self.select_fields)
             else:
-                errors.append(self.get_error_item(selector='data', value=data, reason=msg))
+                errors.append(self.get_error_item(selector='data', value=data, reason='Error on operation create'))
 
         return result, errors
 
@@ -192,9 +193,11 @@ class BaseModel:
         # TODO: Add to v_data from kwargs or not??
         # validate-data
         if validate:
-            v_data, errs = self.validate_for_update(data)
-            if errs:
-                errors.extend(errs)
+            v_data = (self._get_create_schema()).load(data)
+            if v_data.errors:
+                errors.extend(v_data.errors)
+            else:
+                v_data = data
         else:
             v_data = data
 
@@ -204,7 +207,7 @@ class BaseModel:
             conditions = await self._calc_conditions(kwargs.get('conditions'))
 
             # update and get result
-            updated_data, msg = await self.entity_cls.update(
+            updated_data = await self.entity_cls.update(
                 rec_id=v_data.pop('id', None),
                 values=v_data,
                 conditions=conditions,

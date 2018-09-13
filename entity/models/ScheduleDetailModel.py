@@ -54,10 +54,9 @@ class ScheduleDetailModel(BaseModel):
             conditions.append(self.entity_cls.id == any_(ids))
 
         # condition by schedule_ids
-        if schedule_ids:
-            # get intersection schedules
-            schedule_ids = list(set(self.allowed_schedule_ids) & set(schedule_ids))
-            conditions.append(self.entity_cls.schedule_id == any_(schedule_ids))
+        # get intersection schedules
+        schedule_ids = list(set(self.allowed_schedule_ids) & set(schedule_ids)) if schedule_ids else self.allowed_schedule_ids
+        conditions.append(self.entity_cls.schedule_id == any_(schedule_ids))
 
         # select by conditions
         detail_items = await self.entity_cls.select_where(
@@ -65,7 +64,7 @@ class ScheduleDetailModel(BaseModel):
             conditions=conditions
         )
 
-        allowed_sch_ids = [detail_items['schedule_id'] for detail_item in detail_items]
+        allowed_sch_ids = [detail_item['schedule_id'] for detail_item in detail_items]
 
         order_items = await Order.select_where(
             cls_fields=[Order.id, Order.time],

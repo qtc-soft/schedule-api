@@ -1,7 +1,14 @@
+import string
+import random
+
 from sqlalchemy import Column, Integer, String, types, Boolean, ForeignKey, DateTime, DATETIME, UniqueConstraint
 from datetime import datetime
 from .base import Base, BaseEntity
 from hashlib import md5
+
+
+def keygen(size=12, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 
 # Entity Category
@@ -23,7 +30,7 @@ class User(Base, BaseEntity):
     # email
     email = Column(String(50), nullable=False)
     # confirm email value
-    email_confirm = Column(Boolean, default=False)
+    email_confirm = Column(Boolean, default=True)
     # phone
     phone = Column(String(20), unique=True, nullable=False)
     # confirm phone value
@@ -38,6 +45,8 @@ class User(Base, BaseEntity):
     mail_agreement = Column(Boolean, default=True)
     # access flags, for block set 0
     flags = Column(Integer, default=1)
+    # confirm unique key
+    key = Column(String(12), default=keygen())
     # user settings
     data = Column(types.JSON)
     # time created

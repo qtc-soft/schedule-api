@@ -1,5 +1,3 @@
-from sqlalchemy.sql import any_
-from settings import logger
 from entity.validators import UserCreateSchema, UserSchema
 from .BaseModel import BaseModel
 from entity.user import User
@@ -21,7 +19,9 @@ class UserModel(BaseModel):
                 'login',
                 'password',
                 'email',
+                'email_confirm',
                 'phone',
+                'phone_confirm',
                 'country_id',
                 'city_id',
                 'address',
@@ -45,6 +45,7 @@ class UserModel(BaseModel):
         # crypt code
         if data.get(User.password.name):
             data[User.password.name] = User.p_encrypt(data[User.password.name])
+
         result, errors = await super().create_entity(data, **kwargs)
 
         return result, errors

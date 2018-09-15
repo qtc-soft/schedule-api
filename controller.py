@@ -70,6 +70,48 @@ class UserRegistration(DefaultMethodsImpl):
 
 
 # Class View
+class UserConfirmEmail(DefaultMethodsImpl):
+
+    is_auth = False
+
+    def get_model(self):
+        return AuthModel()
+
+    # validate data: data is list
+    def validate_body_params(self, data) -> dict:
+        # schema for default get-params
+        class ConfirmEmailSchema(Schema):
+            key = fields.String(20, required=True)
+
+        # validate
+        valid_data = ConfirmEmailSchema().load(data)
+
+        # if errors
+        if valid_data.errors:
+            # error
+            err = IncorrectParamsException('Invalid params')
+            # calc errors
+            for field_name in valid_data.errors:
+                for err_msg in valid_data.errors[field_name]:
+                    err.add_error(selector=field_name, reason=err_msg)
+            # return error
+            raise err
+
+        # return validate data
+        return valid_data.data
+
+    # HTTP: GET
+    async def get(self):
+        # data from request
+        body_data = await self.get_body_and_validate()
+        # model.login
+        result, errors = await (self.get_model()).confirm_email(data=body_data)
+
+        # return json-response
+        return web.json_response(data=dict(result=result, errors=errors))
+
+
+# Class View
 class UserLogin(DefaultMethodsImpl):
 
     is_auth = False
@@ -106,14 +148,16 @@ class UserLogin(DefaultMethodsImpl):
         # data from request.body
         body_data = await self.get_body_and_validate()
         # model.login
-        data = await (self.get_model()).login(login=body_data['login'], password=body_data['password'])
+        result, error = await (self.get_model()).login(login=body_data['login'], password=body_data['password'])
 
         # json-response
         resp = web.json_response()
         # status 200 or 403
-        if data:
+        if error:
+            resp.set_status(status=403, reason=error)
+        elif result:
             resp.body = ujson.dumps(dict(
-                result=data
+                result=result
             ))
         else:
             resp.set_status(status=403, reason='Access denied..')

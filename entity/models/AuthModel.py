@@ -1,3 +1,4 @@
+import smtplib
 from common.managers.sessionManager import SessionManager
 
 from entity.user import User
@@ -10,19 +11,24 @@ class AuthModel:
     async def login(self, login: str, password: str):
         # result bool or session
         result = False
+        error = False
+
         # search User
         u = await User.select_where(
             cls_fields=[User.id, User.name, User.login, User.email, User.phone, User.email_confirm, User.phone_confirm, User.flags],
-            conditions=[User.login == login, User.password == User.p_encrypt(password), User.email_confirm == True or User.phone_confirm == True]
+            conditions=[User.login == login, User.password == User.p_encrypt(password)]
         )
         # if isset
         if u:
-            # create session
-            session_data = await SessionManager().generate_session(data=dict(u[0]))
+            if not u[0]['email_confirm']:
+                  error = 'Access denied.. Email not confirmed'
+            else:
+                # create session
+                session_data = await SessionManager().generate_session(data=dict(u[0]))
 
-            result = dict(id=session_data.id, sid=session_data.sid, name=session_data.name, login=session_data.login, email=session_data.email, phone=session_data.phone)
+                result = dict(id=session_data.id, sid=session_data.sid, name=session_data.name, login=session_data.login, email=session_data.email, phone=session_data.phone)
 
-        return result
+        return result, error
 
     # registration, return new user
     async def registration(self, data: dict):
@@ -53,7 +59,27 @@ class AuthModel:
         elif entityWithPhone:
             errors.append(um.get_error_item(selector='phone', reason='Account with such phone is exists', value=data["phone"]))
         else:
-            result, errors = await um.create_entity(data)
+            # remove confirmed during registration
+            # data['email_confirm'] = False
+            data['phone_confirm'] = False
+            # create user
+            user_data, errors = await um.create_entity(data)
+            # TODO: remove after confrimed solution
+            # if user created generate session (temporary solution!!!)
+            if user_data:
+                result = dict(id=user_data['id'], name=user_data['name'],
+                              login=user_data['login'], email=user_data['email'], phone=user_data['phone'])
+
+                if user_data['email_confirm']:
+                    session_data = await SessionManager().generate_session(data=user_data)
+                    if session_data:
+                        result['sid'] = session_data.sid
+                else:
+                    errors.append(um.get_error_item(selector='email_confirm', reason='Email not confirmed',
+                                                    value=data["email_confirm"]))
+            else:
+                result = False
+
 
         return result, errors
 

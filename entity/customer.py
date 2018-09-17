@@ -3,6 +3,8 @@ from sqlalchemy import Column, Integer, String, Boolean, types, UniqueConstraint
 from datetime import datetime
 from .base import Base, BaseEntity
 
+from core.utils import keygen
+
 
 # Entity Customer
 class Customer(Base, BaseEntity):
@@ -15,11 +17,11 @@ class Customer(Base, BaseEntity):
     # tel
     phone = Column(String(20), unique=True, nullable=False)
     # confirm phone value
-    phone_confirm = Column(Boolean, default=False)
+    phone_confirm = Column(String(12), default=keygen())
     # email
     email = Column(String(50), unique=True)
     # confirm phone value
-    email_confirm = Column(Boolean, default=False)
+    email_confirm = Column(String(12), default=keygen())
     # mail agreement
     mail_agreement = Column(Boolean, default=True)
     # address

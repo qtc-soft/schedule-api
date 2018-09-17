@@ -1,8 +1,8 @@
-"""initial
+"""init
 
-Revision ID: 45791617a183
+Revision ID: 9368f76463be
 Revises: 
-Create Date: 2018-09-15 23:44:31.010066
+Create Date: 2018-09-17 13:14:42.720907
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '45791617a183'
+revision = '9368f76463be'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -36,9 +36,9 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=True),
     sa.Column('phone', sa.String(length=20), nullable=False),
-    sa.Column('phone_confirm', sa.Boolean(), nullable=True),
+    sa.Column('phone_confirm', sa.String(length=12), nullable=True),
     sa.Column('email', sa.String(length=50), nullable=True),
-    sa.Column('email_confirm', sa.Boolean(), nullable=True),
+    sa.Column('email_confirm', sa.String(length=12), nullable=True),
     sa.Column('mail_agreement', sa.Boolean(), nullable=True),
     sa.Column('address', sa.String(length=200), nullable=True),
     sa.Column('flags', sa.Integer(), nullable=True),
@@ -58,15 +58,14 @@ def upgrade():
     sa.Column('login', sa.String(length=100), nullable=False),
     sa.Column('password', sa.String(length=100), nullable=False),
     sa.Column('email', sa.String(length=50), nullable=False),
-    sa.Column('email_confirm', sa.Boolean(), nullable=True),
+    sa.Column('email_confirm', sa.String(length=12), nullable=True),
     sa.Column('phone', sa.String(length=20), nullable=False),
-    sa.Column('phone_confirm', sa.Boolean(), nullable=True),
+    sa.Column('phone_confirm', sa.String(length=12), nullable=True),
     sa.Column('country_id', sa.Integer(), nullable=True),
     sa.Column('city_id', sa.Integer(), nullable=True),
     sa.Column('address', sa.String(length=200), nullable=True),
     sa.Column('mail_agreement', sa.Boolean(), nullable=True),
     sa.Column('flags', sa.Integer(), nullable=True),
-    sa.Column('key', sa.String(length=12), nullable=True),
     sa.Column('data', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.Integer(), nullable=True),
     sa.Column('updated_at', sa.Integer(), nullable=True),

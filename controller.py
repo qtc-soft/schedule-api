@@ -77,38 +77,36 @@ class UserConfirmEmail(DefaultMethodsImpl):
     def get_model(self):
         return AuthModel()
 
-    # validate data: data is list
-    def validate_body_params(self, data) -> dict:
+    @property
+    # list params for generate from str (,) to list
+    def _def_params_names(self) -> tuple:
+        return 'key'
+
+    @property
+    # schema for validate def params
+    def _params_schema(self) -> Schema:
         # schema for default get-params
         class ConfirmEmailSchema(Schema):
-            key = fields.String(20, required=True)
+            key = fields.String(12, required=True)
 
-        # validate
-        valid_data = ConfirmEmailSchema().load(data)
-
-        # if errors
-        if valid_data.errors:
-            # error
-            err = IncorrectParamsException('Invalid params')
-            # calc errors
-            for field_name in valid_data.errors:
-                for err_msg in valid_data.errors[field_name]:
-                    err.add_error(selector=field_name, reason=err_msg)
-            # return error
-            raise err
-
-        # return validate data
-        return valid_data.data
+        return ConfirmEmailSchema()
 
     # HTTP: GET
     async def get(self):
-        # data from request
-        body_data = await self.get_body_and_validate()
-        # model.login
-        result, errors = await (self.get_model()).confirm_email(data=body_data)
+        # model.confirm_email
+        result = await (self.get_model()).confirm_email(key=self.request.rel_url.query.get('key', None))
 
-        # return json-response
-        return web.json_response(data=dict(result=result, errors=errors))
+        # json-response
+        resp = web.json_response()
+        # status 200 or 403
+        if result:
+            resp.body = ujson.dumps(dict(
+                result=True
+            ))
+        else:
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
 
 
 # Class View
@@ -241,7 +239,7 @@ class CustomLogin(DefaultMethodsImpl):
     is_auth = False
 
     def get_model(self):
-        return AuthModel()
+        return CustomAuthModel()
 
     # validate data: data is list
     def validate_body_params(self, data) -> dict:
@@ -280,6 +278,46 @@ class CustomLogin(DefaultMethodsImpl):
         if data:
             resp.body = ujson.dumps(dict(
                 result=data
+            ))
+        else:
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
+
+
+# Class View
+class CustomConfirmEmail(DefaultMethodsImpl):
+
+    is_auth = False
+
+    def get_model(self):
+        return CustomAuthModel()
+
+    @property
+    # list params for generate from str (,) to list
+    def _def_params_names(self) -> tuple:
+        return 'key'
+
+    @property
+    # schema for validate def params
+    def _params_schema(self) -> Schema:
+        # schema for default get-params
+        class ConfirmEmailSchema(Schema):
+            key = fields.String(12, required=True)
+
+        return ConfirmEmailSchema()
+
+    # HTTP: GET
+    async def get(self):
+        # model.confirm_email
+        result = await (self.get_model()).confirm_email(key=self.request.rel_url.query.get('key', None))
+
+        # json-response
+        resp = web.json_response()
+        # status 200 or 403
+        if result:
+            resp.body = ujson.dumps(dict(
+                result=True
             ))
         else:
             resp.set_status(status=403, reason='Access denied..')
@@ -404,6 +442,9 @@ class ScheduleOnlineGetParamsSchema(Schema):
 
 
 class ScheduleOnline(DefaultMethodsImpl):
+
+    is_auth = False
+
     @property
     # list params for generate from str (,) to list
     def _def_params_names(self) -> tuple:

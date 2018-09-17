@@ -4,6 +4,8 @@ from common.managers.sessionManager import SessionManager
 from entity.user import User
 from entity.models.UserModel import UserModel
 
+from sqlalchemy.sql import or_
+
 
 # business-model by authentification User
 class AuthModel:
@@ -16,11 +18,11 @@ class AuthModel:
         # search User
         u = await User.select_where(
             cls_fields=[User.id, User.name, User.login, User.email, User.phone, User.email_confirm, User.phone_confirm, User.flags],
-            conditions=[User.login == login, User.password == User.p_encrypt(password)]
+            conditions=[User.login == login, User.password == User.p_encrypt(password), or_(not User.email_confirm, not User.phone_confirm)]
         )
         # if isset
         if u:
-            if not u[0]['email_confirm']:
+            if u[0]['email_confirm']:
                   error = 'Access denied.. Email not confirmed'
             else:
                 # create session
@@ -60,28 +62,38 @@ class AuthModel:
             errors.append(um.get_error_item(selector='phone', reason='Account with such phone is exists', value=data["phone"]))
         else:
             # remove confirmed during registration
-            # data['email_confirm'] = False
-            data['phone_confirm'] = False
+            data.pop('email_confirm', None)
+            data.pop('phone_confirm', None)
             # create user
             user_data, errors = await um.create_entity(data)
-            # TODO: remove after confrimed solution
-            # if user created generate session (temporary solution!!!)
+            #  config response
             if user_data:
                 result = dict(id=user_data['id'], name=user_data['name'],
                               login=user_data['login'], email=user_data['email'], phone=user_data['phone'])
-
-                if user_data['email_confirm']:
-                    session_data = await SessionManager().generate_session(data=user_data)
-                    if session_data:
-                        result['sid'] = session_data.sid
-                else:
-                    errors.append(um.get_error_item(selector='email_confirm', reason='Email not confirmed',
-                                                    value=data["email_confirm"]))
             else:
                 result = False
 
-
         return result, errors
+
+    # confirm email
+    async def confirm_email(self, key: str) -> bool:
+        # result bool or session
+        result = False
+
+        # search User
+        u = await User.select_where(
+            cls_fields={User.id, User.name, User.login, User.email, User.phone, User.email_confirm, User.phone_confirm,
+                        User.flags},
+            conditions=[User.email_confirm == key]
+        )
+        # if isset
+        if u:
+            # delete key from DB
+            result = await User.update(
+                rec_id=u[0]['id'],
+                values=dict(email_confirm='')
+            )
+        return result
 
     # logout
     def logout(self, sid: str) -> bool:

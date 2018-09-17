@@ -9,7 +9,7 @@ routes = [
     (METH_POST,     '/user-login',            UserLogin),
     (METH_POST,     '/user-logout',           UserLogout),
     (METH_POST,     '/user-registration',     UserRegistration),
-    (METH_POST,     '/user-email',            UserConfirmEmail),
+    (METH_GET,     '/user-email',            UserConfirmEmail),
     # sid is access?
     (METH_POST,     '/is-auth',            IsAuth),
 
@@ -32,14 +32,14 @@ routes = [
     (METH_DELETE,   '/schedule-details/{ids}',      ScheduleDetail),
 
     (METH_GET,      '/orders/{ids}',      Order),
-    (METH_POST,     '/orders',            Order), # only for customers
-    (METH_PUT,      '/orders',            Order), # only for customers
-
-    (METH_GET,      '/customers/{ids}',      Customer), # only for users
-    (METH_POST,     '/customers',            Customer), # only for customers
-    (METH_PUT,      '/customers',            Customer),
+    (METH_POST,     '/orders',            Order),
+    (METH_PUT,      '/orders',            Order),
 
     # schedule data for customers
+    (METH_GET,      '/customers/{ids}',      Customer),
+    (METH_POST,     '/customers',            Customer),
+    (METH_PUT,      '/customers',            Customer),
+
     (METH_GET,      '/schedule-online/{ids}',      ScheduleOnline),
 ]
 

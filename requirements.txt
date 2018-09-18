@@ -13,4 +13,6 @@ aiocache==0.10.0
 ujson==1.35
 aiohttp-jinja2==1.0.0
 
+aiohttp_debugtoolbar==0.5.0
+
 psycopg2==2.7.5

@@ -1,4 +1,5 @@
 from entity.validators import UserCreateSchema, UserSchema
+from marshmallow import Schema, fields, validate
 from .BaseModel import BaseModel
 from entity.user import User
 
@@ -30,13 +31,37 @@ class UserModel(BaseModel):
             select_fields=select_fields
         )
 
-    # Schema for create
-    def _get_create_schema(self):
+    @classmethod
+    def _get_create_schema(cls) -> Schema:
+        # schema for create entity
+        class UserCreateSchema(Schema):
+            login = fields.String(required=True, validate=validate.Length(min=4, max=20))
+            password = fields.String(load_only=True, validate=validate.Length(min=4, max=20))
+            email = fields.Email(required=True)
+            phone = fields.String(required=True)
+
         return UserCreateSchema()
 
-    # Schema for update
-    def _get_update_schema(self):
-        return UserSchema()
+    @classmethod
+    def _get_update_schema(cls) -> Schema:
+        # schema for update entity
+        class UserUpdateSchema(Schema):
+            id = fields.Integer(required=True)
+            name = fields.String(length=100)
+            organization = fields.String(length=200)
+            description = fields.String(length=200)
+            login = fields.String(length=100)
+            password = fields.String(load_only=True)
+            email = fields.Email()
+            phone = fields.String(length=50)
+            country_id = fields.Integer()
+            city_id = fields.Integer()
+            address = fields.String(length=200)
+            mail_agreement = fields.Boolean()
+            data = fields.Dict()
+            flags = fields.Integer()
+
+        return UserUpdateSchema()
 
     # CREATE Entity
     async def create_entity(self, data: dict, **kwargs) -> tuple:

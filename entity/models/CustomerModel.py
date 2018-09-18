@@ -1,4 +1,5 @@
 from sqlalchemy.sql import any_
+from marshmallow import Schema
 
 from .BaseModel import BaseModel
 
@@ -30,11 +31,13 @@ class CustomerModel(BaseModel):
         self.allowed_schedule_ids = allowed_schedule_ids
 
     # Schema for create
-    def _get_create_schema(self):
+    @classmethod
+    def _get_create_schema(self) -> Schema:
         return CustomerCreateSchema()
 
     # Schema for update
-    def _get_update_schema(self):
+    @classmethod
+    def _get_update_schema(self) -> Schema:
         return CustomerSchema()
 
     # GET Entity

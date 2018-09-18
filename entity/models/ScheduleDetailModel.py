@@ -1,4 +1,5 @@
 from sqlalchemy.sql import any_
+from marshmallow import Schema
 
 from .BaseModel import BaseModel
 
@@ -32,12 +33,12 @@ class ScheduleDetailModel(BaseModel):
 
     # Schema for create
     @classmethod
-    def _get_create_schema(self):
+    def _get_create_schema(self) -> Schema:
         return ScheduleDetailCreateSchema()
 
     # Schema for update
     @classmethod
-    def _get_update_schema(self):
+    def _get_update_schema(self) -> Schema:
         return ScheduleDetailSchema()
 
     # GET Entity

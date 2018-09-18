@@ -1,7 +1,5 @@
-import json
 import asyncio
 import uvloop
-import random
 
 from aiohttp import web, hdrs
 from aiohttp_swagger import setup_swagger
@@ -9,13 +7,15 @@ from urllib.parse import urlparse
 import jinja2
 import aiohttp_jinja2
 
-from common.managers.dbManager import DBManager
-from settings import *
-from core.middleware import filter_errors_request
-
 from routes import setup_routes
+from settings import *
 
 from common.managers.sessionManager import SessionManager
+from common.managers.dbManager import DBManager
+
+from core.middleware import filter_errors_request
+from core.swagger.swagger_helper import generate_swagger_info
+
 
 # add headers for response
 async def on_prepare(request, response):
@@ -75,12 +75,16 @@ def main(prefix_name: str='schedule-online', is_debug=False):
     bind_url = urlparse(config.get('PUBLIC_API', 'bind'))
 
     # run swagger
-    setup_swagger(app,
-                  swagger_url='/api/docs',
-                  title='Schedule online docs',
-                  description='',
-                  api_version='0.1',
-                  contact='schedule_online@gmail.com')
+    setup_swagger(app=app,
+                  swagger_url='/docs',
+                  swagger_info=generate_swagger_info(
+                      app=app,
+                      auth_header_name=config.get('SERVICE', 'auth_header_name'),
+                      title='Schedule online docs',
+                      description='Docs for SCHEDULE-API',
+                      api_version='0.1',
+                      contact='schedule_online@gmail.com',
+                  ))
 
     # run web application
     try:

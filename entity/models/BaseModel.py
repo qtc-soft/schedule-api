@@ -3,11 +3,11 @@ from marshmallow import Schema, fields, UnmarshalResult
 from abc import ABCMeta, abstractmethod
 from sqlalchemy.sql import any_
 
+from core.utils import calc_errors_from_vd, get_error_item, get_result_item, validate_by_schema
+
 
 # abstract class: business-model by entity
-class BaseModel:
-    __metaclass__ = ABCMeta
-
+class BaseModel(metaclass=ABCMeta):
     def __init__(self, entity_cls, all_fields: set or list=set(), select_fields: set or list=set(), **kwargs):
         # class entity
         self.entity_cls = entity_cls
@@ -17,15 +17,13 @@ class BaseModel:
         # set selected fields
         if select_fields:
             # if fields from request - validate
-            if not self.validate_fields(select_fields):
+            if not self.validate_select_fields(select_fields):
                 # if not validate - Exception
                 exc = IncorrectParamsException('Not validate get-params')
                 exc.add_error('fields', 'Not validate')
                 raise exc
             # and set
-            self.select_fields = select_fields
-            # required parameter
-            self.select_fields.add('id')
+            self.select_fields = set(select_fields)
         # if not selected fields - all
         else:
             self.select_fields = set(self.all_fields)
@@ -35,7 +33,7 @@ class BaseModel:
 
     @classmethod
     @abstractmethod
-    def _get_create_schema(self) -> Schema:
+    def _get_create_schema(cls) -> Schema:
         """
         Schema for create Entity
         :return: Schema
@@ -43,69 +41,71 @@ class BaseModel:
 
     @classmethod
     @abstractmethod
-    def _get_update_schema(self) -> Schema:
+    def _get_update_schema(cls) -> Schema:
         """
         Schema for update Entity
         :return: Schema
         """
 
     # validate fields from request and this
-    def validate_fields(self, _fields) -> bool:
+    def validate_select_fields(self, _fields) -> bool:
         for field_name in _fields:
             if field_name not in self.all_fields:
                 return False
         return True
 
     # standard error item
-    def get_error_item(self, selector: str, value=None, reason: str = 'Not found', **kwargs) -> dict:
-        """
-        :param selector: str. Selector/field of error
-        :param reason: str. Reason of error
-        :param value: value. Value/id/selector-value
-        :param kwargs: other params - added ro dict error
-        :return: dict. Item error
-        """
-        # default dict
-        error = dict(
-            selector=selector,
-            reason=reason
-        )
-        # add value
-        if value:
-            error['value'] = value
-        # add other fields
-        if kwargs:
-            for i in kwargs:
-                error[i] = kwargs[i]
-        return error
+    def get_error_item(self, selector: str='', value=None, reason: str='Not found', **kwargs) -> dict:
+        return get_error_item(selector, value, reason, **kwargs)
+
+    # calc errors from validate-data (errors) by UnmarshalResult
+    def calc_errors_from_vd(self, errors: dict, data_on_validate: dict={}) -> list:
+        return calc_errors_from_vd(errors, data_on_validate)
 
     # standard result item
     def get_result_item(self, data, fields) -> dict:
+        return get_result_item(data, fields)
+
+    # func for find 'allowed ids' and 'not found ids' in list items (Records)
+    def get_allowed_ids_by_list(self, all_ids: list or set, items: list or set, field_value=None, field_name: str='tsp_id'):
         """
-        :param data: dict or asyncpgsa.record.Record
-        :param fields: list or set
-        :return: dict
+        :param all_ids: list. All ids by filter
+        :param items: list(dict or Record)
+        :param field_value: value for filter by field_name
+        :param field_name: str. Name field for comparison
+        :return: (list, list) (allowed_ids: list, errors: list)
         """
-        result = {}
-        # if dict
-        if isinstance(data, dict):
-            for field in fields:
-                result[field] = data.get(field, None)
-        # if Record
-        else:
-            for field in fields:
-                try:
-                    result[field] = data[field]
-                except:
-                    result[field] = None
-        return result
+        # allowed ids
+        allowed_ids = []
+        # list errors
+        errors = []
+        # check ids
+        for item in items:
+            # remove from ids for select errors 'not found'
+            all_ids.remove(item['id'])
+            # check allowed if filter
+            if field_name and field_value:
+                # allowed if tsp_id = self.tsp_id
+                if item[field_name] == field_value:
+                    allowed_ids.append(item['id'])
+                # else - add error access denied
+                else:
+                    errors.append(self.get_error_item(selector='id', reason='Access denied', value=item['id']))
+            # or not check
+            else:
+                allowed_ids.append(item['id'])
+
+        # add errors 'not found'
+        [errors.append(self.get_error_item(selector='id', reason='Not found', value=val)) for val in all_ids]
+
+        return allowed_ids, errors
 
     # base conditions by select entities
     async def _get_base_condition(self) -> list:
         return self._base_conditions
 
     # return conditions for query select/update/delete
-    async def _calc_conditions(self, add_cond: list = None) -> list:
+    async def _calc_conditions(self, add_cond: list=None) -> list:
         c = await self._get_base_condition()
         if add_cond and isinstance(add_cond, list):
             c.extend(add_cond)
@@ -154,32 +154,39 @@ class BaseModel:
 
         return result, errors
 
+    # validate dict by create-schema
+    def validate_for_create(self, data):
+        return validate_by_schema(self._get_create_schema(), data)
+
+    # validate dict by update-schema
+    def validate_for_update(self, data):
+        return validate_by_schema(self._get_update_schema(), data)
+
     # CREATE Entity - default method
-    async def create_entity(self, data: dict, validate: bool = True, **kwargs) -> {dict, list}:
+    async def create_entity(self, data: dict, validate: bool=True, **kwargs) -> {dict, list}:
         # result success
         result = {}
         # result errors
         errors = []
 
+        # TODO: Add to v_data from kwargs or not??
         # validate-data
         if validate:
-            v_data = (self._get_create_schema()).load(data)
-            if v_data.errors:
-                errors.extend(v_data.errors)
-            else:
-                v_data = data
+            v_data, errs = self.validate_for_create(data)
+            if errs:
+                errors.extend(errs)
         else:
             v_data = data
 
         # create record
         if not errors and v_data:
             # create and get result
-            new_entity_data = await self.entity_cls.create(values=v_data, return_fields=self.select_fields)
+            new_entity_data, msg = await self.entity_cls.create(values=v_data, return_fields=self.select_fields)
             # add to result
             if new_entity_data:
                 result = self.get_result_item(new_entity_data, self.select_fields)
             else:
-                errors.append(self.get_error_item(selector='data', value=data, reason='Error on operation create'))
+                errors.append(self.get_error_item(selector='data', value=data, reason=msg))
 
         return result, errors
 
@@ -193,11 +200,9 @@ class BaseModel:
         # TODO: Add to v_data from kwargs or not??
         # validate-data
         if validate:
-            v_data = (self._get_create_schema()).load(data)
-            if v_data.errors:
-                errors.extend(v_data.errors)
-            else:
-                v_data = data
+            v_data, errs = self.validate_for_update(data)
+            if errs:
+                errors.extend(errs)
         else:
             v_data = data
 
@@ -207,7 +212,7 @@ class BaseModel:
             conditions = await self._calc_conditions(kwargs.get('conditions'))
 
             # update and get result
-            updated_data = await self.entity_cls.update(
+            updated_data, msg = await self.entity_cls.update(
                 rec_id=v_data.pop('id', None),
                 values=v_data,
                 conditions=conditions,
@@ -222,15 +227,15 @@ class BaseModel:
         return result, errors
 
     # DELETE Entity - default method, in kwargs may be conditions
-    async def delete_entity(self, id: int, **kwargs) -> tuple:
+    async def delete_entity(self, obj_id: int, **kwargs) -> tuple:
         # results
         result, errors = [], []
 
         # condition by selector id
-        if id:
+        if obj_id:
             # conditions for query
             conditions = await self._calc_conditions(kwargs.get('conditions'))
-            conditions.append(self.entity_cls.id == id)
+            conditions.append(self.entity_cls.id == obj_id)
 
             # TODO: Bad code! remove select-query
             # find item in database
@@ -240,12 +245,12 @@ class BaseModel:
             )
             # if item finded & has permissions delete it
             if entity_item:
-                if await self.entity_cls.delete_by_id(id):
-                    result.append(id)
+                if await self.entity_cls.delete_by_id(obj_id):
+                    result.append(obj_id)
                 else:
-                    errors.append(self.get_error_item(selector='id', reason='Access denied', value=id))
+                    errors.append(self.get_error_item(selector='id', reason='Access denied', value=obj_id))
             else:
-                errors.append(self.get_error_item(selector='id', reason='Not found', value=id))
+                errors.append(self.get_error_item(selector='id', reason='Not found', value=obj_id))
         else:
             errors = self.get_error_item('id', 'No valid data')
 

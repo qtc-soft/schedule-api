@@ -1,5 +1,6 @@
 from sqlalchemy.sql import any_
 from settings import logger
+from marshmallow import Schema
 
 from .BaseModel import BaseModel
 
@@ -39,12 +40,12 @@ class ScheduleModel(BaseModel):
 
     # Schema for create
     @classmethod
-    def _get_create_schema(self):
+    def _get_create_schema(self) -> Schema:
         return ScheduleCreateSchema()
 
     # Schema for update
     @classmethod
-    def _get_update_schema(self):
+    def _get_update_schema(self) -> Schema:
         return ScheduleSchema()
 
     # GET Entity
@@ -121,12 +122,12 @@ class ScheduleOnlineModel(BaseModel):
 
     # Schema for create
     @classmethod
-    def _get_create_schema(self):
+    def _get_create_schema(self) -> Schema:
         return ScheduleCreateSchema()
 
     # Schema for update
     @classmethod
-    def _get_update_schema(self):
+    def _get_update_schema(self) -> Schema:
         return ScheduleSchema()
 
     # GET Entity

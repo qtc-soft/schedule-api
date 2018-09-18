@@ -4,6 +4,7 @@
 
 import asyncio
 from aiohttp import web, web_request
+from aiohttp.hdrs import METH_GET, METH_PUT, METH_POST, METH_DELETE
 from abc import ABCMeta, abstractmethod
 
 from marshmallow import Schema, fields, UnmarshalResult
@@ -22,6 +23,23 @@ def get_auth_token_from_request(request: web.Request, param_name: str) -> str:
 class DefParamsSchema(Schema):
     ids = fields.List(fields.Integer())
     fields = fields.List(fields.String())
+
+# GET: schema for default get-params
+class DefGETParamsSchema(Schema):
+    ids = fields.List(fields.Integer(), default='all')
+    fields = fields.List(fields.String())
+
+# POST: schema for default get-params
+class DefPOSTParamsSchema(Schema):
+    fields = fields.List(fields.String())
+
+# PUT: schema for default get-params
+class DefPUTParamsSchema(Schema):
+    fields = fields.List(fields.String())
+
+# DELETE: schema for default get-params
+class DefDELETEParamsSchema(Schema):
+    ids = fields.List(fields.Integer())
 
 
 # View-class for extended tsp_api
@@ -47,75 +65,63 @@ class ExtendedApiView(web.View, metaclass=ABCMeta):
             # error access denied
             raise AccessException('Access denied. Session is closed.')
 
+    @classmethod
+    # schemas for get-params by methods
+    def _get_params_schemas(cls) -> dict:
+        return {
+            METH_GET: DefGETParamsSchema(),
+            METH_POST: DefPOSTParamsSchema(),
+            METH_PUT: DefPUTParamsSchema(),
+            METH_DELETE: DefDELETEParamsSchema()
+        }
+
+    @property
+    # Schema for self request-method
+    def _get_params_schema(self) -> Schema or None:
+        return self._get_params_schemas().get(self.request.method)
+
+    # func for custom access control by session, check session
+    def __access_control(self, *args, **kwargs) -> bool:
+        return True
+
     @property
     # storage sessions
     def session_storage(self) -> SessionManager:
         return self.request.app.session_storage
 
     @property
-    # auth header name
-    def auth_header_name(self) -> str:
-        return self.request.app.auth_header_name
-
-    @property
     # Session, if is_auth = True
     def session(self) -> Session:
         return self._session
 
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields',
+    # validate get-params, apply schema
+    def _validate_get_params(self, params: dict) -> UnmarshalResult:
+        return self._get_params_schema.load(params)
 
-    @property
-    # schema for validate def params
-    def _params_schema(self) -> Schema:
-        return DefParamsSchema()
-
-    # apply schema, validate def params
-    def _apply_params_schema(self, params: dict) -> UnmarshalResult:
-        return self._params_schema.load(params)
-
-    # generate get-params by _params_to_list
-    def _get_def_request_params(self):
+    # return get-params from request
+    def _select_request_get_params(self):
         #  result get-params
         params = {}
-        # get def params
-        for param_name in self._def_params_names:
-            # if isset param in shema
-            if param_name in self._params_schema.fields:
-                # get-param by name
-                p = self.request.match_info.get(param_name, '') or self.request.rel_url.query.get(param_name, '')
-                # if param = all
-                if p == self.KEY_API_SELECT_ALL:
-                    params[param_name] = []
-                else:
-                    # calc param by shema.type (list or not)
-                    if type(self._params_schema.fields[param_name]) == fields.List:
-                        params[param_name] = p.split(',') if p else []
-                    elif p:
-                        params[param_name] = p
+        # get params
+        for param_name in self._get_params_schema.fields:
+            # param-value, select from request
+            p = self.request.match_info.get(param_name, '') or self.request.rel_url.query.get(param_name, '')
+            # if param = all
+            if p == self.KEY_API_SELECT_ALL:
+                params[param_name] = []
+            else:
+                # calc param by schema.type (list or not)
+                if type(self._get_params_schema.fields[param_name]) == fields.List:
+                    params[param_name] = p.split(',') if p else []
+                elif p:
+                    params[param_name] = p
 
-        # apply schema
-        params_loaded = self._apply_params_schema(params)
+        # validate
+        params_loaded = self._validate_get_params(params)
         # if not validate
         if params_loaded.errors:
-            # list errors
-            errors = []
-            # get validate-errors and write to dict errors
-            for field_name in params_loaded.errors:
-                for field_err_pos in params_loaded.errors[field_name]:
-                    errors.append(dict(
-                        selector=field_name,
-                        reason=params_loaded.errors[field_name][field_err_pos][0] if isinstance(
-                            params_loaded.errors[field_name][field_err_pos], list) else
-                        params_loaded.errors[field_name][field_err_pos],
-                        position=field_err_pos
-                    ))
-
-            # exception "not validate"
-            raise IncorrectParamsException(msg='Incorrect param: {}'.format(params_loaded.errors, errors),
-                                           errors=errors)
+            # raise error
+            raise IncorrectParamsException(msg='Incorrect get-params')
 
         # return dict by params_names
         return params_loaded.data
@@ -123,9 +129,14 @@ class ExtendedApiView(web.View, metaclass=ABCMeta):
     @property
     # request def params getter
     def request_def_params(self) -> dict:
-        if not self._def_request_params:
-            self._def_request_params = self._get_def_request_params()
-        return self._def_request_params
+        if not self._request_get_params:
+            self._request_get_params = self._select_request_get_params()
+        return self._request_get_params
+
+    @property
+    # auth header name
+    def auth_header_name(self) -> str:
+        return self.request.app.auth_header_name
 
     # return data from request.post
     async def get_body_data(self):
@@ -178,8 +189,8 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
         ---
           tags:
           - MODEL
-          summary: Help for Schedule-API
-          description: Get Entities by ids
+          summary: Help for MGate-API
+          description: Get Fleets by ids
           produces:
           - application/json
           parameters:
@@ -209,8 +220,8 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
         # return json-response
         return web.json_response(data=dict(result=data[0], errors=data[1]))
 
-    # HTTP: POST
-    async def post(self):
+    # HTTP: POST, kwargs added to data for created items
+    async def post(self, **kwargs):
         # get data from body and validate
         body_data = await self.get_body_and_validate()
 
@@ -221,25 +232,23 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
         result = []
         errors = []
 
-        # get event loop
-        loop = asyncio.get_event_loop()
-
         # list tasks
         tasks = []
         # create Tasks
         for item in body_data:
             # create coroutine
             coro = model.create_entity(
-                data=item
+                data=item,
+                **kwargs
             )
             # create Task by coroutine
-            task = loop.create_task(coro)
+            task = asyncio.create_task(coro)
             # add callback by finished
             task.add_done_callback(lambda task: task_finished_callback(task=task, res=result, err=errors))
             # add to list tasks
             tasks.append(task)
 
-        # wait tasks create entity
+        # wait tasks create Fleets
         await asyncio.wait(tasks)
 
         # return json-response
@@ -250,15 +259,12 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
         # get data from body and validate
         body_data = await self.get_body_and_validate()
 
-        # Entity model
+        # Fleet model
         model = self.get_model()
 
         # result vars
         result = []
         errors = []
-
-        # get event loop
-        loop = asyncio.get_event_loop()
 
         # list tasks
         tasks = []
@@ -269,7 +275,7 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
                 data=item,
             )
             # create Task by coroutine
-            task = loop.create_task(coro)
+            task = asyncio.create_task(coro)
             # add callback by finished
             task.add_done_callback(lambda task: task_finished_callback(task=task, res=result, err=errors))
             # add to list tasks
@@ -293,26 +299,25 @@ class DefaultMethodsImpl(ExtendedApiView, metaclass=ABCMeta):
         result = []
         errors = []
 
-        # get event loop
-        loop = asyncio.get_event_loop()
+        # TODO: add msg to response: set ids
+        if ids:
+            # list tasks
+            tasks = []
+            # create Tasks
+            for id in ids:
+                # create coroutine
+                coro = model.delete_entity(
+                    obj_id=id
+                )
+                # create Task by coroutine
+                task = asyncio.create_task(coro)
+                # add callback by finished
+                task.add_done_callback(lambda task: task_finished_callback(task=task, res=result, err=errors))
+                # add to list tasks
+                tasks.append(task)
 
-        # list tasks
-        tasks = []
-        # create Tasks
-        for id in ids:
-            # create coroutine
-            coro = model.delete_entity(
-                id=id
-            )
-            # create Task by coroutine
-            task = loop.create_task(coro)
-            # add callback by finished
-            task.add_done_callback(lambda task: task_finished_callback(task=task, res=result, err=errors))
-            # add to list tasks
-            tasks.append(task)
-
-        # wait tasks update
-        await asyncio.wait(tasks)
+            # wait tasks update
+            await asyncio.wait(tasks)
 
         # return json-response
         return web.json_response(data=dict(result=result, errors=errors))

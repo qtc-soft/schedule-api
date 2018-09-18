@@ -1,8 +1,11 @@
-from aiohttp import web
 import ujson
+import aiohttp_jinja2
+from aiohttp import web
+from aiohttp.hdrs import METH_GET, METH_PUT, METH_POST, METH_DELETE
+from marshmallow import Schema, fields
 
 from core.exceptions import IncorrectParamsException
-from core.web_view import DefaultMethodsImpl, ExtendedApiView
+from core.web_view import DefaultMethodsImpl, ExtendedApiView, DefGETParamsSchema
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
 from entity.models.CustomAuthModel import CustomAuthModel
@@ -10,11 +13,6 @@ from entity.models.ScheduleModel import ScheduleModel, ScheduleOnlineModel
 from entity.models.ScheduleDetailModel import ScheduleDetailModel
 from entity.models.OrderModel import OrderModel
 from entity.models.CustomerModel import CustomerModel
-
-from marshmallow import Schema, fields
-
-from aiohttp import web
-import aiohttp_jinja2
 
 
 # index-page
@@ -28,6 +26,10 @@ class ApiHelper(web.View):
 class UserRegistration(DefaultMethodsImpl):
 
     is_auth = False
+
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        return {}
 
     def get_model(self):
         return AuthModel()
@@ -69,27 +71,23 @@ class UserRegistration(DefaultMethodsImpl):
         return web.json_response(data=dict(result=result, errors=errors))
 
 
+class UserConfirmEmailParamsSchema(Schema):
+    key = fields.String(12, required=True)
+
+
 # Class View
 class UserConfirmEmail(DefaultMethodsImpl):
 
     is_auth = False
 
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        r = DefaultMethodsImpl._get_params_schemas()
+        r[METH_GET] = UserConfirmEmailParamsSchema()
+        return r
+
     def get_model(self):
         return AuthModel()
-
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return 'key'
-
-    @property
-    # schema for validate def params
-    def _params_schema(self) -> Schema:
-        # schema for default get-params
-        class ConfirmEmailSchema(Schema):
-            key = fields.String(12, required=True)
-
-        return ConfirmEmailSchema()
 
     # HTTP: GET
     async def get(self):
@@ -113,6 +111,10 @@ class UserConfirmEmail(DefaultMethodsImpl):
 class UserLogin(DefaultMethodsImpl):
 
     is_auth = False
+
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        return {}
 
     def get_model(self):
         return AuthModel()
@@ -168,6 +170,10 @@ class UserLogout(DefaultMethodsImpl):
 
     is_auth = False
 
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        return {}
+
     def get_model(self):
         return AuthModel()
 
@@ -192,6 +198,10 @@ class UserLogout(DefaultMethodsImpl):
 class CustomRegistration(DefaultMethodsImpl):
 
     is_auth = False
+
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        return {}
 
     def get_model(self):
         return CustomAuthModel()
@@ -237,6 +247,10 @@ class CustomRegistration(DefaultMethodsImpl):
 class CustomLogin(DefaultMethodsImpl):
 
     is_auth = False
+
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        return {}
 
     def get_model(self):
         return CustomAuthModel()
@@ -285,27 +299,23 @@ class CustomLogin(DefaultMethodsImpl):
         return resp
 
 
+class CustomConfirmEmailParamsSchema(Schema):
+    key = fields.String(12, required=True)
+
+
 # Class View
 class CustomConfirmEmail(DefaultMethodsImpl):
 
     is_auth = False
 
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        r = DefaultMethodsImpl._get_params_schemas()
+        r[METH_GET] = CustomConfirmEmailParamsSchema()
+        return r
+
     def get_model(self):
         return CustomAuthModel()
-
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return 'key'
-
-    @property
-    # schema for validate def params
-    def _params_schema(self) -> Schema:
-        # schema for default get-params
-        class ConfirmEmailSchema(Schema):
-            key = fields.String(12, required=True)
-
-        return ConfirmEmailSchema()
 
     # HTTP: GET
     async def get(self):
@@ -329,6 +339,10 @@ class CustomConfirmEmail(DefaultMethodsImpl):
 class CustomLogout(DefaultMethodsImpl):
 
     is_auth = False
+
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        return {}
 
     def get_model(self):
         return AuthModel()
@@ -363,26 +377,10 @@ class IsAuth (ExtendedApiView):
         return web.json_response(data=dict(result=[dict(access=bool(self.session.sid == request_sid))], errors=[]))
 
 
-# schema for default get-params
-class UserMethodGetParamsSchema(Schema):
-    ids = fields.List(fields.Integer())
-    fields = fields.List(fields.String())
-
-
 # Class View
 class User(DefaultMethodsImpl):
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields'
-
-    @property
-    # schema for validate def params
-    def _params_schema(self) -> Schema:
-        return UserMethodGetParamsSchema()
-
     # get business-account
-    def get_model(self):
+    def get_model(self) -> UserModel:
         return UserModel(select_fields=self.request_def_params['fields'])
 
     # HTTP: GET
@@ -398,18 +396,8 @@ class User(DefaultMethodsImpl):
 
 # Class View
 class Schedule(DefaultMethodsImpl):
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields', 'name'
-
-    @property
-    # schema for validate def params
-    def _params_schema(self) -> Schema:
-        return UserMethodGetParamsSchema()
-
     # get business-account
-    def get_model(self):
+    def get_model(self) -> ScheduleModel:
         return ScheduleModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
@@ -435,28 +423,22 @@ class Schedule(DefaultMethodsImpl):
 
 
 # schema for default get-params
-class ScheduleOnlineGetParamsSchema(Schema):
-    ids = fields.List(fields.Integer())
+class ScheduleOnlineGetParamsSchema(DefGETParamsSchema):
     name = fields.String()
-    fields = fields.List(fields.String())
 
 
 class ScheduleOnline(DefaultMethodsImpl):
 
     is_auth = False
 
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'name', 'fields'
-
-    @property
-    # schema for validate def params
-    def _params_schema(self) -> Schema:
-        return ScheduleOnlineGetParamsSchema()
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        r = DefaultMethodsImpl._get_params_schemas()
+        r[METH_GET] = ScheduleOnlineGetParamsSchema()
+        return r
 
     # get business-account
-    def get_model(self):
+    def get_model(self) -> ScheduleOnlineModel:
         return ScheduleOnlineModel(select_fields=self.request_def_params['fields'])
 
     # HTTP: GET
@@ -471,24 +453,20 @@ class ScheduleOnline(DefaultMethodsImpl):
 
 
 # schema for default get-params
-class ScheduleDetailMethodGetParamsSchema(UserMethodGetParamsSchema):
+class ScheduleDetailMethodGetParamsSchema(DefGETParamsSchema):
     schedules = fields.List(fields.Integer())
 
 
 # Class View
 class ScheduleDetail(DefaultMethodsImpl):
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'schedules', 'fields'
-
-    @property
-    # schema for validate def params
-    def _params_schema(self) -> Schema:
-        return ScheduleDetailMethodGetParamsSchema()
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        r = DefaultMethodsImpl._get_params_schemas()
+        r[METH_GET] = ScheduleDetailMethodGetParamsSchema()
+        return r
 
     # get business-account
-    def get_model(self):
+    def get_model(self) -> ScheduleDetailModel:
         return ScheduleDetailModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
@@ -503,7 +481,7 @@ class ScheduleDetail(DefaultMethodsImpl):
 
 
 # schema for default get-params
-class OrderMethodGetParamsSchema(UserMethodGetParamsSchema):
+class OrderMethodGetParamsSchema(DefGETParamsSchema):
     schedules = fields.List(fields.Integer())
     customers = fields.List(fields.Integer())
     status = fields.String()
@@ -511,18 +489,15 @@ class OrderMethodGetParamsSchema(UserMethodGetParamsSchema):
 
 # Class View
 class Order(DefaultMethodsImpl):
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'status', 'schedules', 'customers'
-
-    @property
     # schema for validate def params
-    def _params_schema(self) -> Schema:
-        return OrderMethodGetParamsSchema()
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        r = DefaultMethodsImpl._get_params_schemas()
+        r[METH_GET] = OrderMethodGetParamsSchema()
+        return r
 
     # get business-account
-    def get_model(self):
+    def get_model(self) -> OrderModel:
         return OrderModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
@@ -540,24 +515,21 @@ class Order(DefaultMethodsImpl):
 
 
 # schema for default get-params
-class CustomerMethodGetParamsSchema(UserMethodGetParamsSchema):
+class CustomerMethodGetParamsSchema(DefGETParamsSchema):
     schedules = fields.List(fields.Integer())
 
 
 # class View
 class Customer(DefaultMethodsImpl):
-    @property
-    # list params for generate from str (,) to list
-    def _def_params_names(self) -> tuple:
-        return self.KEY_API_IDS, 'fields', 'schedules'
-
-    @property
     # schema for validate def params
-    def _params_schema(self) -> Schema:
-        return CustomerMethodGetParamsSchema()
+    @classmethod
+    def _get_params_schemas(cls) -> dict:
+        r = DefaultMethodsImpl._get_params_schemas()
+        r[METH_GET] = CustomerMethodGetParamsSchema()
+        return r
 
     # get business-account
-    def get_model(self):
+    def get_model(self) -> CustomerModel:
         return CustomerModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET

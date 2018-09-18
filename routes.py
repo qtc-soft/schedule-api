@@ -9,13 +9,13 @@ routes = [
     (METH_POST,     '/user-login',            UserLogin),
     (METH_POST,     '/user-logout',           UserLogout),
     (METH_POST,     '/user-registration',     UserRegistration),
-    (METH_GET,     '/user-email',            UserConfirmEmail),
+    (METH_GET,      '/user-email',            UserConfirmEmail),
     # sid is access?
     (METH_POST,     '/is-auth',            IsAuth),
 
-    (METH_POST,     '/custom-login',            CustomLogin),
-    (METH_POST,     '/custom-logout',           CustomLogout),
-    (METH_POST,     '/custom-registration',     CustomRegistration),
+    (METH_POST,     '/customer-login',            CustomLogin),
+    (METH_POST,     '/customer-logout',           CustomLogout),
+    (METH_POST,     '/customer-registration',     CustomRegistration),
 
     (METH_GET,      '/users/{ids}',      User),
     (METH_PUT,      '/users',            User),

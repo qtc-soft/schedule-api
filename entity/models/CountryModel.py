@@ -1,5 +1,6 @@
 from sqlalchemy.sql import any_
 from settings import logger
+from marshmallow import Schema
 from entity.validators import CountryCreateSchema, CountrySchema
 from .BaseModel import BaseModel
 from entity.country import Country
@@ -23,9 +24,11 @@ class CountryModel(BaseModel):
         )
 
     # Schema for create
-    def _get_create_schema(self):
+    @classmethod
+    def _get_create_schema(self) -> Schema:
         return CountryCreateSchema()
 
     # Schema for update
-    def _get_update_schema(self):
+    @classmethod
+    def _get_update_schema(self) -> Schema:
         return CountrySchema()

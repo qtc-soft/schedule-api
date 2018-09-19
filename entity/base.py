@@ -2,6 +2,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import select, update, delete, insert, \
     any_, \
     elements
+from asyncpg.exceptions import UniqueViolationError
+
 from settings import logger
 from common.managers.dbManager import DBManager
 
@@ -16,16 +18,19 @@ class BaseEntity(object):
 
     @classmethod
     # get fields-records from DB by condition
-    async def select_where(cls, cls_fields: list or set=[], str_fields: list or set=[], conditions: list=None):
+    async def select_where(cls, cls_fields: set=(), str_fields: set=(), conditions: list=None):
         # query = select([cls.__getattribute__(cls, field) for field in fields] if fields else [cls])
 
         if not cls_fields and not str_fields:
             fields = [cls]
         else:
-            fields = cls_fields if cls_fields else []
+            fields = list(cls_fields) if cls_fields else []
             if str_fields:
                 for field in str_fields:
-                    fields.append(cls.__getattribute__(cls, field))
+                    try:
+                        fields.append(cls.__getattribute__(cls, field))
+                    except:
+                        logger.debug('Field {} not found in cls {}'.format(field, cls))
 
         query = select(fields if fields else [cls])
 
@@ -44,7 +49,7 @@ class BaseEntity(object):
 
     @classmethod
     # get all records by fields from DB
-    async def select_all_by_fields(cls, fields: list = list()):
+    async def select_all_by_fields(cls, fields: list=list()):
         if not fields or len(fields) == 0:
             fields = [cls]
         return await DBManager().query_fetch(select(fields))
@@ -61,7 +66,9 @@ class BaseEntity(object):
 
     @classmethod
     # insert into table
-    async def create(cls, values, return_fields: list or set=None) -> int or bool:
+    async def create(cls, values: dict, return_fields: list or set=None) -> {int or bool, str}:
+        # message/error
+        msg = ''
         # list returning-fields
         if not return_fields:
             return_fields = ['id']
@@ -71,31 +78,41 @@ class BaseEntity(object):
             rc = await DBManager().query_fetchrow(
                 insert(cls).values(values).returning(*map(lambda field: cls.__getattribute__(cls, field), return_fields))
             )
+        except UniqueViolationError as e:
+            rc, msg = False, 'Record already exists'
         except Exception as e:
-            logger.error('entity.base.BaseEntity#create: {}'.format(e))
+            logger.error('common.entity.baseEntity.BaseEntity#create: {}'.format(e))
             rc = False
 
-        return rc
+        return rc, msg
 
     @classmethod
     # update record in db by entity.id
-    async def update(cls, rec_id: int, values: dict, return_fields: list or set=None) -> dict or bool:
+    async def update(cls, values: dict, rec_id: int=None, conditions: list=[], return_fields: list or set=None) -> {dict or bool, str}:
+        # message/error
+        msg = ''
         # result update
         ru = False
+        # add condition by id
         if rec_id:
-            # list returning-fields
-            if not return_fields:
-                return_fields = ['id']
+            conditions.append(cls.id == rec_id)
+        # list returning-fields
+        if not return_fields:
+            return_fields = {'id'}
+        # create and execute query
+        try:
+            # query to db
+            query = update(cls).values(values).returning(*map(lambda field: cls.__getattribute__(cls, field), return_fields))
+            for condition in conditions:
+                if isinstance(condition, elements.ColumnElement):
+                    query = query.where(condition)
 
-            # create and execute query
-            try:
-                ru = await DBManager().query_fetchrow(
-                    update(cls).values(values).where(cls.id == rec_id).returning(*map(lambda field: cls.__getattribute__(cls, field), return_fields))
-                )
-            except Exception as e:
-                logger.error('entity.base.BaseEntity#update: {}'.format(e))
+            ru = await DBManager().query_fetchrow(query)
+        except Exception as e:
+            logger.error('common.entity.baseEntity.BaseEntity#update: {}'.format(e))
+            msg = 'Error update record'
 
-        return ru
+        return ru, msg
 
     @classmethod
     # update records in db by conditions
@@ -120,7 +137,7 @@ class BaseEntity(object):
                     query.returning(*map(lambda field: cls.__getattribute__(cls, field), return_fields))
                 )
             except Exception as e:
-                logger.error('entity.base.BaseEntity#update: {}'.format(e))
+                logger.error('common.entity.baseEntity.BaseEntity#update: {}'.format(e))
 
         return ru
 

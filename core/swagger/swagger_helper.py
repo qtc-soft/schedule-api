@@ -131,18 +131,32 @@ def generate_swagger_info(app,
                             'type': 'object',
                             'properties': param_items
                         }
-                        # add body-params
-                        end_point_doc_by_method['parameters'].append({
-                            'in': 'body',
-                            'name': 'item-value',
-                            'required': 'true',
-                            'schema': {
-                                'type': 'array',
-                                'items': {
-                                    '$ref': '#/definitions/{}'.format(definition_name),
+                        if definition_name == 'AuthModel/POST' or definition_name == 'CustomerAuthModel/POST':
+                            end_point_doc_by_method['parameters'].append({
+                                'in': 'body',
+                                'name': 'item-value',
+                                'required': 'true',
+                                'schema': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'login': dict(type='string', default=''),
+                                        'password': dict(type='string', writeOnly=True, default='')
+                                    }
                                 }
-                            }
-                        })
+                            })
+                        else:
+                            # add body-params
+                            end_point_doc_by_method['parameters'].append({
+                                'in': 'body',
+                                'name': 'item-value',
+                                'required': 'true',
+                                'schema': {
+                                    'type': 'array',
+                                    'items': {
+                                        '$ref': '#/definitions/{}'.format(definition_name),
+                                    }
+                                }
+                            })
 
             # add to docs
             swagger['paths'].setdefault(route_path, {})

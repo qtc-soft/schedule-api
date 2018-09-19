@@ -46,26 +46,6 @@ class CountryCreateSchema(EntityCreateSchema):
 class CountrySchema(CountryCreateSchema):
     id = fields.Integer()
 
-# -- Schedule Schemas --
-# schema for create new schedule entity
-class ScheduleCreateSchema(EntityCreateSchema):
-    name = fields.String(length=100)
-    description = fields.String(length=200)
-    email = fields.Email()
-    phone = fields.String(length=50)
-    creater_id = fields.Integer()
-    country_id = fields.Integer()
-    city_id = fields.Integer()
-    address = fields.String(length=200)
-    data = fields.Dict()
-    flags = fields.Integer()
-    activate = fields.Boolean()
-
-
-class ScheduleSchema(ScheduleCreateSchema):
-    id = fields.Integer()
-# -- END Schedule schemas --
-
 
 # -- Schedule Detail Schemas --
 # schema for create new schedule detail entity
@@ -96,16 +76,3 @@ class OrderCreateSchema(EntityCreateSchema):
 class OrderSchema(OrderCreateSchema):
     id = fields.Integer()
 # -- END Schedule Detail schemas --
-
-
-# -- Customer Schemas --
-# schema for create new schedule entity
-class CustomerCreateSchema(EntityCreateSchema):
-    name = fields.String(length=100)
-    email = fields.Email()
-    phone = fields.String(length=50)
-
-
-class CustomerSchema(ScheduleCreateSchema):
-    id = fields.Integer()
-# -- END Customer schemas --

@@ -30,7 +30,7 @@ class Order(Base, BaseEntity):
     # schedule
     schedule_id = Column(Integer, ForeignKey('Schedules.id', ondelete='CASCADE'), nullable=False)
     #
-    customer_id = Column(Integer, ForeignKey('Customers.id'), nullable=False)
+    customer_id = Column(Integer, ForeignKey('Customers.id'))
     # description from customer
     description = Column(String(length=200))
     # status

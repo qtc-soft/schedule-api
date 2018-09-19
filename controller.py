@@ -8,7 +8,7 @@ from core.exceptions import IncorrectParamsException
 from core.web_view import DefaultMethodsImpl, ExtendedApiView, DefGETParamsSchema
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
-from entity.models.CustomAuthModel import CustomAuthModel
+from entity.models.CustomAuthModel import CustomerAuthModel
 from entity.models.ScheduleModel import ScheduleModel, ScheduleOnlineModel
 from entity.models.ScheduleDetailModel import ScheduleDetailModel
 from entity.models.OrderModel import OrderModel
@@ -31,68 +31,33 @@ class UserRegistration(DefaultMethodsImpl):
     def _get_params_schemas(cls) -> dict:
         return {}
 
-    def get_model(self):
-        return AuthModel()
-
-    # validate data: data is list
-    def validate_body_params(self, data) -> dict:
-        # schema for default get-params
-        class RegistrationSchema(Schema):
-            login = fields.String(100, required=True)
-            password = fields.String(100, required=True)
-            email = fields.String(50, required=True)
-            phone = fields.String(20, required=True)
-
-        # validate
-        valid_data = RegistrationSchema().load(data)
-
-        # if errors
-        if valid_data.errors:
-            # error
-            err = IncorrectParamsException('Invalid login-data')
-            # calc errors
-            for field_name in valid_data.errors:
-                for err_msg in valid_data.errors[field_name]:
-                    err.add_error(selector=field_name, reason=err_msg)
-            # return error
-            raise err
-
-        # return validate data
-        return valid_data.data
-
-    # HTTP: POST
-    async def post(self):
-        # data from request.body
-        body_data = await self.get_body_and_validate()
-        # model.login
-        result, errors = await (self.get_model()).registration(data=body_data)
-
-        # return json-response
-        return web.json_response(data=dict(result=result, errors=errors))
+    def get_model(self) -> UserModel:
+        return UserModel()
 
 
-class UserConfirmEmailParamsSchema(Schema):
-    key = fields.String(12, required=True)
+class UserConfirmParamsSchema(Schema):
+    email_key = fields.String(required=True)
 
 
 # Class View
-class UserConfirmEmail(DefaultMethodsImpl):
+class UserAuthCommon(DefaultMethodsImpl):
 
     is_auth = False
 
     @classmethod
     def _get_params_schemas(cls) -> dict:
         r = DefaultMethodsImpl._get_params_schemas()
-        r[METH_GET] = UserConfirmEmailParamsSchema()
+        r[METH_GET] = UserConfirmParamsSchema()
+        r[METH_DELETE] = Schema()
         return r
 
-    def get_model(self):
+    def get_model(self) -> AuthModel:
         return AuthModel()
 
     # HTTP: GET
     async def get(self):
         # model.confirm_email
-        result = await (self.get_model()).confirm_email(key=self.request.rel_url.query.get('key', None))
+        result = await (self.get_model()).confirm_email(key=self.request.rel_url.query.get('email_key', None))
 
         # json-response
         resp = web.json_response()
@@ -106,47 +71,10 @@ class UserConfirmEmail(DefaultMethodsImpl):
 
         return resp
 
-
-# Class View
-class UserLogin(DefaultMethodsImpl):
-
-    is_auth = False
-
-    @classmethod
-    def _get_params_schemas(cls) -> dict:
-        return {}
-
-    def get_model(self):
-        return AuthModel()
-
-    # validate data: data is list
-    def validate_body_params(self, data) -> dict:
-        # schema for default get-params
-        class LoginSchema(Schema):
-            login = fields.String(100, required=True)
-            password = fields.String(100, required=True)
-
-        # validate
-        valid_data = LoginSchema().load(data)
-
-        # if errors
-        if valid_data.errors:
-            # error
-            err = IncorrectParamsException('Invalid login-data')
-            # calc errors
-            for field_name in valid_data.errors:
-                for err_msg in valid_data.errors[field_name]:
-                    err.add_error(selector=field_name, reason=err_msg)
-            # return error
-            raise err
-
-        # return validate data
-        return valid_data.data
-
     # HTTP: POST
     async def post(self):
         # data from request.body
-        body_data = await self.get_body_and_validate()
+        body_data = await self.request.json() if self.request.can_read_body else {}
         # model.login
         result, error = await (self.get_model()).login(login=body_data['login'], password=body_data['password'])
 
@@ -164,21 +92,8 @@ class UserLogin(DefaultMethodsImpl):
 
         return resp
 
-
-# Class View
-class UserLogout(DefaultMethodsImpl):
-
-    is_auth = False
-
-    @classmethod
-    def _get_params_schemas(cls) -> dict:
-        return {}
-
-    def get_model(self):
-        return AuthModel()
-
-    # HTTP: POST
-    async def post(self):
+    # HTTP: DELETE
+    async def delete(self):
         # model.logout
         sid = self.request.headers.get('X-AccessToken')
         result = (self.get_model()).logout(sid) if sid else True
@@ -195,7 +110,7 @@ class UserLogout(DefaultMethodsImpl):
 
 
 # Class View
-class CustomRegistration(DefaultMethodsImpl):
+class CustomerRegistration(DefaultMethodsImpl):
 
     is_auth = False
 
@@ -203,124 +118,29 @@ class CustomRegistration(DefaultMethodsImpl):
     def _get_params_schemas(cls) -> dict:
         return {}
 
-    def get_model(self):
-        return CustomAuthModel()
-
-    # validate data: data is list
-    def validate_body_params(self, data) -> dict:
-        # schema for default get-params
-        class RegistrationSchema(Schema):
-            login = fields.String(100, required=True)
-            password = fields.String(100, required=True)
-            email = fields.String(50, required=True)
-            phone = fields.String(20, required=True)
-
-        # validate
-        valid_data = RegistrationSchema().load(data)
-
-        # if errors
-        if valid_data.errors:
-            # error
-            err = IncorrectParamsException('Invalid login-data')
-            # calc errors
-            for field_name in valid_data.errors:
-                for err_msg in valid_data.errors[field_name]:
-                    err.add_error(selector=field_name, reason=err_msg)
-            # return error
-            raise err
-
-        # return validate data
-        return valid_data.data
-
-    # HTTP: POST
-    async def post(self):
-        # data from request.body
-        body_data = await self.get_body_and_validate()
-        # model.login
-        result, errors = await (self.get_model()).registration(data=body_data)
-
-        # return json-response
-        return web.json_response(data=dict(result=result, errors=errors))
+    def get_model(self) -> CustomerModel:
+        return CustomerModel()
 
 
 # Class View
-class CustomLogin(DefaultMethodsImpl):
-
-    is_auth = False
-
-    @classmethod
-    def _get_params_schemas(cls) -> dict:
-        return {}
-
-    def get_model(self):
-        return CustomAuthModel()
-
-    # validate data: data is list
-    def validate_body_params(self, data) -> dict:
-        # schema for default get-params
-        class LoginSchema(Schema):
-            login = fields.String(100, required=True)
-            password = fields.String(100, required=True)
-
-        # validate
-        valid_data = LoginSchema().load(data)
-
-        # if errors
-        if valid_data.errors:
-            # error
-            err = IncorrectParamsException('Invalid login-data')
-            # calc errors
-            for field_name in valid_data.errors:
-                for err_msg in valid_data.errors[field_name]:
-                    err.add_error(selector=field_name, reason=err_msg)
-            # return error
-            raise err
-
-        # return validate data
-        return valid_data.data
-
-    # HTTP: POST
-    async def post(self):
-        # data from request.body
-        body_data = await self.get_body_and_validate()
-        # model.login
-        data = await (self.get_model()).login(login=body_data['login'], password=body_data['password'])
-
-        # json-response
-        resp = web.json_response()
-        # status 200 or 403
-        if data:
-            resp.body = ujson.dumps(dict(
-                result=data
-            ))
-        else:
-            resp.set_status(status=403, reason='Access denied..')
-
-        return resp
-
-
-class CustomConfirmEmailParamsSchema(Schema):
-    key = fields.String(12, required=True)
-
-
-# Class View
-class CustomConfirmEmail(DefaultMethodsImpl):
+class CustomerAuthCommon(DefaultMethodsImpl):
 
     is_auth = False
 
     @classmethod
     def _get_params_schemas(cls) -> dict:
         r = DefaultMethodsImpl._get_params_schemas()
-        r[METH_GET] = CustomConfirmEmailParamsSchema()
+        r[METH_GET] = UserConfirmParamsSchema()
+        r[METH_DELETE] = Schema()
         return r
 
-    def get_model(self):
-        return CustomAuthModel()
+    def get_model(self) -> CustomerAuthModel:
+        return CustomerAuthModel()
 
     # HTTP: GET
     async def get(self):
         # model.confirm_email
-        result = await (self.get_model()).confirm_email(key=self.request.rel_url.query.get('key', None))
+        result = await (self.get_model()).confirm_email(key=self.request.rel_url.query.get('email_key', None))
 
         # json-response
         resp = web.json_response()
@@ -334,21 +154,29 @@ class CustomConfirmEmail(DefaultMethodsImpl):
 
         return resp
 
-
-# Class View
-class CustomLogout(DefaultMethodsImpl):
-
-    is_auth = False
-
-    @classmethod
-    def _get_params_schemas(cls) -> dict:
-        return {}
-
-    def get_model(self):
-        return AuthModel()
-
     # HTTP: POST
     async def post(self):
+        # data from request.body
+        body_data = await self.request.json() if self.request.can_read_body else {}
+        # model.login
+        result, error = await (self.get_model()).login(login=body_data['login'], password=body_data['password'])
+
+        # json-response
+        resp = web.json_response()
+        # status 200 or 403
+        if error:
+            resp.set_status(status=403, reason=error)
+        elif result:
+            resp.body = ujson.dumps(dict(
+                result=result
+            ))
+        else:
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
+
+    # HTTP: DELETE
+    async def delete(self):
         # model.logout
         sid = self.request.headers.get('X-AccessToken')
         result = (self.get_model()).logout(sid) if sid else True

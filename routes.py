@@ -6,18 +6,18 @@ from controller import *
 routes = [
     (METH_GET,      '',                  ApiHelper),
 
-    (METH_POST,     '/user-login',            UserLogin),
-    (METH_POST,     '/user-logout',           UserLogout),
-    (METH_POST,     '/user-registration',     UserRegistration),
-    (METH_GET,      '/user-email',            UserConfirmEmail),
+    (METH_POST,     '/user-login',            UserAuthCommon),
+    (METH_DELETE,   '/user-logout',           UserAuthCommon),
+    (METH_GET,      '/user-confirm',          UserAuthCommon),
     # sid is access?
-    (METH_POST,     '/is-auth',            IsAuth),
+    (METH_POST,     '/is-auth',               IsAuth),
 
-    (METH_POST,     '/customer-login',            CustomLogin),
-    (METH_POST,     '/customer-logout',           CustomLogout),
-    (METH_POST,     '/customer-registration',     CustomRegistration),
+    (METH_POST,     '/customer-login',        CustomerAuthCommon),
+    (METH_DELETE,   '/customer-logout',       CustomerAuthCommon),
+    (METH_GET,      '/customer-confirm',      CustomerAuthCommon),
 
     (METH_GET,      '/users/{ids}',      User),
+    (METH_POST,     '/user',             UserRegistration),
     (METH_PUT,      '/users',            User),
     (METH_DELETE,   '/users/{ids}',      User),
 
@@ -34,11 +34,13 @@ routes = [
     (METH_GET,      '/orders/{ids}',      Order),
     (METH_POST,     '/orders',            Order),
     (METH_PUT,      '/orders',            Order),
+    (METH_DELETE,   '/orders',            Order),
 
     # schedule data for customers
     (METH_GET,      '/customers/{ids}',      Customer),
-    (METH_POST,     '/customers',            Customer),
+    (METH_POST,     '/customers',            CustomerRegistration),
     (METH_PUT,      '/customers',            Customer),
+    (METH_DELETE,   '/customers/{ids}',      Customer),
 
     (METH_GET,      '/schedule-online/{ids}',      ScheduleOnline),
 ]

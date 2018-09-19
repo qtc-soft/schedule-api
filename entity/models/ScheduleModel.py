@@ -1,10 +1,7 @@
 from sqlalchemy.sql import any_
-from settings import logger
-from marshmallow import Schema
+from marshmallow import Schema, fields
 
 from .BaseModel import BaseModel
-
-from entity.validators import ScheduleCreateSchema, ScheduleSchema
 from entity.schedule import Schedule
 
 from common.managers.sessionManager import SessionManager
@@ -34,19 +31,44 @@ class ScheduleModel(BaseModel):
             conditions=[Schedule.creater_id == creater_id]
         )
         # get creter id for current session
-        self.creater_id = creater_id,
+        self.creater_id = creater_id
         # allowed schedules
         self.allowed_schedule_ids = allowed_schedule_ids
 
     # Schema for create
     @classmethod
     def _get_create_schema(self) -> Schema:
+        class ScheduleCreateSchema(Schema):
+            name = fields.String(required=True, length=100)
+            description = fields.String(length=200)
+            email = fields.Email()
+            phone = fields.String(length=50)
+            country_id = fields.Integer()
+            city_id = fields.Integer()
+            creter_id = fields.Integer()
+            address = fields.String(length=200)
+            data = fields.Dict()
+            flags = fields.Integer(default=1)
+            activate = fields.Boolean(default=True)
         return ScheduleCreateSchema()
 
     # Schema for update
     @classmethod
     def _get_update_schema(self) -> Schema:
-        return ScheduleSchema()
+        class ScheduleUpdateSchema(Schema):
+            id = fields.Integer(required=True)
+            name = fields.String(length=100)
+            description = fields.String(length=200)
+            email = fields.Email()
+            phone = fields.String(length=50)
+            country_id = fields.Integer()
+            city_id = fields.Integer()
+            creter_id = fields.Integer()
+            address = fields.String(length=200)
+            data = fields.Dict()
+            flags = fields.Integer(default=1)
+            activate = fields.Boolean(default=True)
+        return ScheduleUpdateSchema()
 
     # GET Entity
     async def get_entities(self, ids: list, filter_name: str = None) -> tuple:
@@ -110,25 +132,21 @@ class ScheduleOnlineModel(BaseModel):
                 'country_id',
                 'city_id',
                 'address',
-                'flags',
-                'data',
-                'created_at',
-                'updated_at',
+                'activate',
             ),
             select_fields=select_fields,
-            # add base-conditions
-            conditions=[Schedule.activate == True]
+            conditions=[Schedule.activate == True],
         )
 
     # Schema for create
     @classmethod
     def _get_create_schema(self) -> Schema:
-        return ScheduleCreateSchema()
+        return Schema()
 
     # Schema for update
     @classmethod
     def _get_update_schema(self) -> Schema:
-        return ScheduleSchema()
+        return Schema()
 
     # GET Entity
     async def get_entities(self, ids: list, filter_name: str = None, creater_ids: set = None) -> tuple:

@@ -56,8 +56,7 @@ class ExtendedApiView(web.View, metaclass=ABCMeta):
     def __init__(self, request: web_request.Request):
         super().__init__(request)
         # default get params
-        self._def_request_params = None
-
+        self._request_get_params = None
         # authentification-Session
         self._session = self.session_storage.get_session_by_sid(get_auth_token_from_request(self.request, self.auth_header_name))
 

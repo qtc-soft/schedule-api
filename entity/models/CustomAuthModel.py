@@ -50,7 +50,7 @@ class CustomerAuthModel(BaseModel):
 
         # search Customer
         u = await self.entity_cls.select_where(
-            cls_fields=[self.entity_cls.id, self.entity_cls.login, self.entity_cls.password, self.entity_cls.email, self.entity_cls.email_confirm, self.entity_cls.phone, self.entity_cls.phone_confirm],
+            cls_fields=[self.entity_cls.id, self.entity_cls.login, self.entity_cls.password, self.entity_cls.email, self.entity_cls.email_confirm, self.entity_cls.phone, self.entity_cls.phone_confirm, self.entity_cls.flags],
             conditions=[self.entity_cls.login == login, self.entity_cls.password == self.entity_cls.p_encrypt(password), or_(self.entity_cls.email_confirm == '', self.entity_cls.phone_confirm == '')]
         )
         # if isset
@@ -69,6 +69,7 @@ class CustomerAuthModel(BaseModel):
     async def confirm_email(self, key: str) -> bool:
         # result bool or session
         result = False
+        msg = ''
 
         # search Customer
         u = await Customer.select_where(
@@ -79,11 +80,8 @@ class CustomerAuthModel(BaseModel):
         # if isset
         if u:
             # delete key from DB
-            result = await Customer.update(
-                rec_id=u[0]['id'],
-                values=dict(email_confirm='')
-            )
-        return result
+            result, msg = await super().update_entity(data=dict(id=u[0]['id'], email_confirm=''), validate=False)
+        return result, msg
 
     # logout
     def logout(self, sid: str) -> bool:

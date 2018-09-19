@@ -1,6 +1,7 @@
 from marshmallow import Schema, fields, validate
 from .BaseModel import BaseModel
 from entity.user import User
+from core.utils import keygen
 
 
 # business-model by entity User
@@ -104,6 +105,8 @@ class UserModel(BaseModel):
             # crypt code
             if data.get(self.entity_cls.password.name):
                 data[self.entity_cls.password.name] = self.entity_cls.p_encrypt(data[self.entity_cls.password.name])
+            # generate uniqui key
+            data[self.entity_cls.email_confirm.name] = keygen()
             # create user
             user_data, errors = await super().create_entity(data, **kwargs)
             #  config response
@@ -118,6 +121,7 @@ class UserModel(BaseModel):
         # crypt code
         if data.get(self.entity_cls.password.name):
             data[self.entity_cls.password.name] = self.entity_cls.p_encrypt(data[self.entity_cls.password.name])
+
         # update
         result, errors = await super().update_entity(data, **kwargs)
 

@@ -5,7 +5,7 @@ from aiohttp.hdrs import METH_GET, METH_PUT, METH_POST, METH_DELETE
 from marshmallow import Schema, fields
 
 from core.exceptions import IncorrectParamsException
-from core.web_view import DefaultMethodsImpl, ExtendedApiView, DefGETParamsSchema
+from core.web_view import DefaultMethodsImpl, ExtendedApiView, DefGETParamsSchema, SystemACL
 from entity.models.UserModel import UserModel
 from entity.models.AuthModel import AuthModel
 from entity.models.CustomAuthModel import CustomerAuthModel
@@ -47,6 +47,7 @@ class UserAuthCommon(DefaultMethodsImpl):
     @classmethod
     def _get_params_schemas(cls) -> dict:
         r = DefaultMethodsImpl._get_params_schemas()
+        r[METH_POST] = Schema()
         r[METH_GET] = UserConfirmParamsSchema()
         r[METH_DELETE] = Schema()
         return r
@@ -131,6 +132,7 @@ class CustomerAuthCommon(DefaultMethodsImpl):
     def _get_params_schemas(cls) -> dict:
         r = DefaultMethodsImpl._get_params_schemas()
         r[METH_GET] = UserConfirmParamsSchema()
+        r[METH_POST] = Schema()
         r[METH_DELETE] = Schema()
         return r
 
@@ -209,7 +211,7 @@ class IsAuth (ExtendedApiView):
 class User(DefaultMethodsImpl):
     # get business-account
     def get_model(self) -> UserModel:
-        return UserModel(select_fields=self.request_def_params['fields'])
+        return UserModel(select_fields=self.request_def_params.get('fields'))
 
     # HTTP: GET
     async def get(self):
@@ -226,26 +228,56 @@ class User(DefaultMethodsImpl):
 class Schedule(DefaultMethodsImpl):
     # get business-account
     def get_model(self) -> ScheduleModel:
-        return ScheduleModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
+        return ScheduleModel(select_fields=self.request_def_params.get('fields'), allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):
-        # get models
-        data = await (self.get_model()).get_entities(
-            ids=self.request_def_params['ids'],
-            filter_name=self.request.rel_url.query.get('name', None)
-        )
-
-        return web.json_response(data=dict(result=data[0], errors=data[1]))
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # get models
+            data = await (self.get_model()).get_entities(
+                ids=self.request_def_params['ids'],
+                filter_name=self.request.rel_url.query.get('name', None)
+            )
+            resp = web.json_response(data=dict(result=data[0], errors=data[1]))
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
+        return resp
 
     # HTTP: POST, only for User
     async def post(self):
-        # json-response
-        resp = await super().post()
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            resp = await super().post()
 
-        if self.session and self.session.id:
-            # update session
-            await self.session_storage.update_acl_by_acc_id(self.session.id)
+            if self.session and self.session.id:
+                # update session
+                await self.session_storage.update_acl_by_acc_id(self.session.id)
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
+
+    # HTTP: PUT, only for User
+    async def put(self):
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            resp = await super().put()
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
+
+    # HTTP: DELETE, only for User
+    async def delete(self):
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            resp = await super().delete()
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
 
         return resp
 
@@ -267,7 +299,7 @@ class ScheduleOnline(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self) -> ScheduleOnlineModel:
-        return ScheduleOnlineModel(select_fields=self.request_def_params['fields'])
+        return ScheduleOnlineModel(select_fields=self.request_def_params.get('fields'))
 
     # HTTP: GET
     async def get(self):
@@ -295,17 +327,56 @@ class ScheduleDetail(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self) -> ScheduleDetailModel:
-        return ScheduleDetailModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
+        return ScheduleDetailModel(select_fields=self.request_def_params.get('fields'), allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
-    # HTTP: GET
+    # HTTP: GET, only for User
     async def get(self):
-        # get tags by get-params
-        data = await (self.get_model()).get_entities(
-            ids=self.request_def_params['ids'],
-            schedule_ids=self.request_def_params['schedules'],
-        )
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            # get tags by get-params
+            data = await (self.get_model()).get_entities(
+                ids=self.request_def_params['ids'],
+                schedule_ids=self.request_def_params['schedules'],
+            )
+            resp = web.json_response(data=dict(result=data[0], errors=data[1]))
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
 
-        return web.json_response(data=dict(result=data[0], errors=data[1]))
+        return resp
+
+    # HTTP: POST, only for User
+    async def post(self):
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            resp = await super().post()
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
+
+    # HTTP: PUT, only for User
+    async def put(self):
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            resp = await super().put()
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
+
+    # HTTP: DELETE, only for User
+    async def delete(self):
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            resp = await super().delete()
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
 
 
 # schema for default get-params
@@ -326,20 +397,36 @@ class Order(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self) -> OrderModel:
-        return OrderModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
+        return OrderModel(select_fields=self.request_def_params.get('fields'), allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
-    # HTTP: GET
+    # HTTP: GET, only for User
     async def get(self):
-        # get tags by get-params
-        data = await (self.get_model()).get_entities(
-            ids=self.request_def_params['ids'],
-            filter_name=self.request.rel_url.query.get('name', None),
-            schedule_ids=self.request_def_params['schedules'],
-            customer_ids=self.request_def_params['customers'],
-            status=self.request_def_params['status'],
-        )
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            data = await (self.get_model()).get_entities(
+                ids=self.request_def_params['ids'],
+                filter_name=self.request.rel_url.query.get('name', None),
+                schedule_ids=self.request_def_params['schedules'],
+                customer_ids=self.request_def_params['customers'],
+                status=self.request_def_params['status'],
+            )
+            resp = web.json_response(data=dict(result=data[0], errors=data[1]))
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
 
-        return web.json_response(data=dict(result=data[0], errors=data[1]))
+        return resp
+
+    # HTTP: DELETE, only for User
+    async def delete(self):
+        if self.session and self.session.flags & SystemACL.USER_ACL:
+            # json-response
+            resp = await super().delete()
+        else:
+            resp = web.json_response()
+            resp.set_status(status=403, reason='Access denied..')
+
+        return resp
 
 
 # schema for default get-params
@@ -358,7 +445,7 @@ class Customer(DefaultMethodsImpl):
 
     # get business-account
     def get_model(self) -> CustomerModel:
-        return CustomerModel(select_fields=self.request_def_params['fields'], allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
+        return CustomerModel(select_fields=self.request_def_params.get('fields'), allowed_schedule_ids=self.session.schedule_ids, creater_id=self.session.id)
 
     # HTTP: GET
     async def get(self):

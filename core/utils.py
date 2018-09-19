@@ -5,14 +5,6 @@ import asyncio
 from aiohttp import web
 
 
-# enable aiohtt-debugtoolbar for Application, route: /_debugtoolbar
-def enable_debugtoolbar(app: web.Application):
-    import aiohttp_debugtoolbar
-    from aiohttp_debugtoolbar import toolbar_middleware_factory
-    app.middlewares.append(toolbar_middleware_factory)
-    aiohttp_debugtoolbar.setup(app)
-
-
 # func-callback by finished Task
 def task_finished_callback(task: asyncio.Task, res: list, err: list):
     # get task-result
@@ -107,10 +99,5 @@ def validate_by_schema(schema, data: dict) -> {dict, list}:
 
 
 # generate unique key
-def keygen (size=12, chars=string.ascii_uppercase + string.digits) -> str:
-    """
-    :param size:
-    :param chars:
-    :return: String with unique key
-    """
-    return ''.join(random.choice(chars) for _ in range(size))
+def keygen(size=12, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for x in range(size))

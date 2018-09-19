@@ -4,8 +4,6 @@ from marshmallow import Schema, fields
 from .BaseModel import BaseModel
 from entity.schedule import Schedule
 
-from common.managers.sessionManager import SessionManager
-
 
 # schedule for Users
 class ScheduleModel(BaseModel):
@@ -45,7 +43,7 @@ class ScheduleModel(BaseModel):
             phone = fields.String(length=50)
             country_id = fields.Integer()
             city_id = fields.Integer()
-            creter_id = fields.Integer()
+            creater_id = fields.Integer()
             address = fields.String(length=200)
             data = fields.Dict()
             flags = fields.Integer(default=1)
@@ -63,7 +61,7 @@ class ScheduleModel(BaseModel):
             phone = fields.String(length=50)
             country_id = fields.Integer()
             city_id = fields.Integer()
-            creter_id = fields.Integer()
+            creater_id = fields.Integer()
             address = fields.String(length=200)
             data = fields.Dict()
             flags = fields.Integer(default=1)

@@ -1,10 +1,8 @@
 from sqlalchemy import Column, Integer, String, types, Boolean, ForeignKey, DateTime, DATETIME, UniqueConstraint
 from datetime import datetime
 from .base import Base, BaseEntity
-from hashlib import md5
-
-
 from core.utils import keygen
+from hashlib import md5
 
 
 # Entity Category
@@ -40,7 +38,9 @@ class User(Base, BaseEntity):
     # mail agreement
     mail_agreement = Column(Boolean, default=True)
     # access flags, for block set 0
-    flags = Column(Integer, default=1)
+    # 0x1 - default user flag
+    # 0x10 - system user flag
+    flags = Column(Integer, default=17)
     # user settings
     data = Column(types.JSON)
     # time created

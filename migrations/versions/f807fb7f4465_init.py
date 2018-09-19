@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 9368f76463be
+Revision ID: f807fb7f4465
 Revises: 
-Create Date: 2018-09-17 13:14:42.720907
+Create Date: 2018-09-19 17:12:56.180646
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9368f76463be'
+revision = 'f807fb7f4465'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -35,19 +35,26 @@ def upgrade():
     op.create_table('Customers',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=True),
+    sa.Column('description', sa.String(length=200), nullable=True),
+    sa.Column('login', sa.String(length=100), nullable=False),
+    sa.Column('password', sa.String(length=100), nullable=False),
+    sa.Column('email', sa.String(length=50), nullable=False),
+    sa.Column('email_confirm', sa.String(length=12), nullable=True),
     sa.Column('phone', sa.String(length=20), nullable=False),
     sa.Column('phone_confirm', sa.String(length=12), nullable=True),
-    sa.Column('email', sa.String(length=50), nullable=True),
-    sa.Column('email_confirm', sa.String(length=12), nullable=True),
-    sa.Column('mail_agreement', sa.Boolean(), nullable=True),
+    sa.Column('country_id', sa.Integer(), nullable=True),
+    sa.Column('city_id', sa.Integer(), nullable=True),
     sa.Column('address', sa.String(length=200), nullable=True),
+    sa.Column('mail_agreement', sa.Boolean(), nullable=True),
     sa.Column('flags', sa.Integer(), nullable=True),
     sa.Column('data', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.Integer(), nullable=True),
     sa.Column('updated_at', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['city_id'], ['Cities.id'], ),
+    sa.ForeignKeyConstraint(['country_id'], ['Countries.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('email'),
-    sa.UniqueConstraint('email', 'phone'),
+    sa.UniqueConstraint('login'),
+    sa.UniqueConstraint('login', 'email'),
     sa.UniqueConstraint('phone')
     )
     op.create_table('Users',
@@ -102,9 +109,9 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('time', sa.Integer(), nullable=False),
     sa.Column('schedule_id', sa.Integer(), nullable=False),
-    sa.Column('customer_id', sa.Integer(), nullable=False),
+    sa.Column('customer_id', sa.Integer(), nullable=True),
     sa.Column('description', sa.String(length=200), nullable=True),
-    sa.Column('status', sa.Enum('booking', 'confirmed', 'rejected', 'paid', name='orderstatusenum'), nullable=False),
+    sa.Column('status', sa.Integer(), nullable=False),
     sa.Column('paiment', sa.Boolean(), nullable=True),
     sa.Column('auto_confirm', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.Integer(), nullable=True),
@@ -118,6 +125,7 @@ def upgrade():
     sa.Column('time', sa.Integer(), nullable=False),
     sa.Column('description', sa.String(length=200), nullable=True),
     sa.Column('members', sa.Integer(), nullable=False),
+    sa.Column('price', sa.Float(), nullable=False),
     sa.Column('schedule_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.Integer(), nullable=True),
     sa.Column('updated_at', sa.Integer(), nullable=True),

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, types, Boolean, ForeignKey, DateTime, DATETIME, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, DATETIME, UniqueConstraint
 from datetime import datetime
 from .base import Base, BaseEntity
 
@@ -15,6 +15,8 @@ class SCHDetail(Base, BaseEntity):
     description = Column(String(length=200))
     # members count
     members = Column(Integer, default=1, nullable=False)
+    # price
+    price = Column(Float, nullable=False, default=0)
     # schedule
     schedule_id = Column(Integer, ForeignKey('Schedules.id', ondelete='CASCADE'), nullable=False)
     # time created

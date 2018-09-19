@@ -1,9 +1,9 @@
+from datetime import datetime
 from sqlalchemy.sql import any_
-from marshmallow import Schema
+from marshmallow import Schema, fields, validate
 
 from .BaseModel import BaseModel
 
-from entity.validators import OrderCreateSchema, OrderSchema
 from entity.schedule import Schedule
 from entity.order import Order
 
@@ -21,12 +21,9 @@ class OrderModel(BaseModel):
                 'time',
                 'description',
                 'status',
-                'payment',
                 'auto_confirm',
                 'customer_id',
                 'schedule_id',
-                'created_at',
-                'updated_at',
             ),
             select_fields=select_fields
         )
@@ -38,12 +35,27 @@ class OrderModel(BaseModel):
     # Schema for create
     @classmethod
     def _get_create_schema(self) -> Schema:
+        class OrderCreateSchema(Schema):
+            time = fields.Integer(required=True, default=datetime.now())
+            description = fields.String(length=200)
+            status = fields.Integer(default=1)
+            auto_confirm = fields.Boolean(default=True)
+            customer_id = fields.Integer()
+            schedule_id = fields.Integer()
         return OrderCreateSchema()
 
     # Schema for update
     @classmethod
     def _get_update_schema(self) -> Schema:
-        return OrderSchema()
+        class OrderUpdateSchema(Schema):
+            id = fields.Integer(required=True)
+            time = fields.Integer(required=True, default=datetime.now())
+            description = fields.String(length=200)
+            status = fields.Integer(default=1)
+            auto_confirm = fields.Boolean(default=True)
+            customer_id = fields.Integer()
+            schedule_id = fields.Integer()
+        return OrderUpdateSchema()
 
     # GET Entity
     async def get_entities(self, ids: list, schedule_ids: set = None, customer_ids: set = None, filter_name: str = None, status: str = None) -> tuple:
@@ -84,15 +96,18 @@ class OrderModel(BaseModel):
             conditions=conditions
         )
 
-        # ids by selected items
-        select_ids = set()
-        # generate result list
-        for record in records:
-            select_ids.add(record['id'])
-            result.append(self.get_result_item(record, self.select_fields))
+        #  ---- result data format ----
+        # schedule_id: list()
+        #  ----------------------------
 
-        # add not selected items in errors
-            self.calc_result(records, ids, result, errors)
+        format_result = dict()
+        # format details
+        for record in records:
+            format_result_data = format_result.setdefault(record['schedule_id'], list())
+            format_result_data.append(self.get_result_item(record, self.select_fields))
+
+        if format_result:
+            result.append(format_result)
 
         return result, errors
 

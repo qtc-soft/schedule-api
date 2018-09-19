@@ -34,7 +34,7 @@ class Order(Base, BaseEntity):
     # description from customer
     description = Column(String(length=200))
     # status
-    status = Column(Enum(OrderStatusEnum), default=OrderStatusEnum.booking, nullable=False)
+    status = Column(Integer, default=OrderStatusEnum.booking, nullable=False)
     # online paiment
     paiment = Column(Boolean, default=False)
     # auto confirm by phone

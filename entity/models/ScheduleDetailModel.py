@@ -1,9 +1,9 @@
 from sqlalchemy.sql import any_
-from marshmallow import Schema
+from marshmallow import Schema, fields
+from datetime import datetime
 
 from .BaseModel import BaseModel
 
-from entity.validators import ScheduleDetailCreateSchema, ScheduleDetailSchema
 from entity.schedule import Schedule
 from entity.schDetail import SCHDetail
 from entity.order import Order
@@ -22,9 +22,11 @@ class ScheduleDetailModel(BaseModel):
                 'time',
                 'description',
                 'members',
+                'price',
                 'schedule_id',
             ),
-            select_fields=select_fields
+            select_fields=select_fields,
+            conditions=[SCHDetail.schedule_id == any_(allowed_schedule_ids)]
         )
         # get creter id for current session
         self.creater_id = creater_id
@@ -34,12 +36,25 @@ class ScheduleDetailModel(BaseModel):
     # Schema for create
     @classmethod
     def _get_create_schema(self) -> Schema:
+        class ScheduleDetailCreateSchema(Schema):
+            time = fields.Integer(required=True, default=datetime.now())
+            description = fields.String(length=200)
+            members = fields.Integer(default=1)
+            schedule_id = fields.Integer(required=True)
+            price = fields.Float(default=1)
         return ScheduleDetailCreateSchema()
 
     # Schema for update
     @classmethod
     def _get_update_schema(self) -> Schema:
-        return ScheduleDetailSchema()
+        class ScheduleDetailUpdateSchema(Schema):
+            id = fields.Integer(required=True)
+            time = fields.Integer(required=True, default=datetime.now())
+            description = fields.String(length=200)
+            members = fields.Integer(default=1)
+            schedule_id = fields.Integer(required=True)
+            price = fields.Float(default=1)
+        return ScheduleDetailUpdateSchema()
 
     # GET Entity
     async def get_entities(self, ids: list, schedule_ids: set = None) -> tuple:
@@ -56,40 +71,24 @@ class ScheduleDetailModel(BaseModel):
 
         # condition by schedule_ids
         # get intersection schedules
-        schedule_ids = list(set(self.allowed_schedule_ids) & set(schedule_ids)) if schedule_ids else self.allowed_schedule_ids
-        conditions.append(self.entity_cls.schedule_id == any_(schedule_ids))
+        if schedule_ids:
+            conditions.append(self.entity_cls.schedule_id == any_(schedule_ids))
 
         # select by conditions
-        detail_items = await self.entity_cls.select_where(
+        records = await self.entity_cls.select_where(
             str_fields=self.select_fields,
             conditions=conditions
         )
 
-        allowed_sch_ids = [detail_item['schedule_id'] for detail_item in detail_items]
-
-        order_items = await Order.select_where(
-            cls_fields=[Order.id, Order.time],
-            conditions=[Order.schedule_id == any_(allowed_sch_ids)]
-        )
-
-        format_result = dict()
-
         #  ---- result data format ----
-        # schedule_id: {
-        #   orders: [],
-        #   details: []
-        # }
+        # schedule_id: list()
         #  ----------------------------
 
+        format_result = dict()
         # format details
-        for detail_item in detail_items:
-            format_result_data = format_result.setdefault(detail_item['schedule_id'], dict(orders=list(), details=list()))
-            format_result_data['details'].append(self.get_result_item(detail_item, self.select_fields))
-
-        # format orders
-        for order_item in order_items:
-            if format_result[order_item['schedule_id']] and format_result[order_item['schedule_id']]['orders']:
-                format_result[order_item['schedule_id']]['orders'].add(order_item)
+        for detail_item in records:
+            format_result_data = format_result.setdefault(detail_item['schedule_id'], list())
+            format_result_data.append(self.get_result_item(detail_item, self.select_fields))
 
         if format_result:
             result.append(format_result)
@@ -113,20 +112,3 @@ class ScheduleDetailModel(BaseModel):
         # get entites
         return result, errors
 
-    # UPDATE Entity
-    async def update_entity(self, data: dict, **kwargs) -> tuple:
-        # result vars
-        result = []
-        errors = []
-
-        # schedule id from request params
-        sch_id = data.get('schedule_id', -1)
-
-        # if schedule accessable
-        if sch_id in self.allowed_schedule_ids:
-            result, errors = await super().update_entity(data, **kwargs)
-        else:
-            errors = self.get_error_item('id', 'You have not such schedule')
-
-        # get entites
-        return result, errors

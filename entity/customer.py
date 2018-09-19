@@ -1,9 +1,8 @@
 from sqlalchemy import Column, Integer, String, Boolean, types, UniqueConstraint, ForeignKey
-
 from datetime import datetime
 from .base import Base, BaseEntity
-
 from core.utils import keygen
+from hashlib import md5
 
 
 # Entity Customer
@@ -37,6 +36,7 @@ class Customer(Base, BaseEntity):
     # mail agreement
     mail_agreement = Column(Boolean, default=True)
     # access flags, for block set 0
+    # 0x1 - default user flag
     flags = Column(Integer, default=1)
     # user settings
     data = Column(types.JSON)
@@ -48,3 +48,8 @@ class Customer(Base, BaseEntity):
     __table_args__ = (
         UniqueConstraint('login', 'email'),
     )
+
+    @classmethod
+    # encrypt (for password)
+    def p_encrypt(cls, val: str) -> str:
+        return md5(val.encode('utf-8')).hexdigest()

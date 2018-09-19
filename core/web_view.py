@@ -2,6 +2,7 @@
     Extensions for controllers
 """
 
+from collections import namedtuple
 import asyncio
 from aiohttp import web, web_request
 from aiohttp.hdrs import METH_GET, METH_PUT, METH_POST, METH_DELETE
@@ -14,6 +15,16 @@ from common.managers.sessionManager import SessionManager
 from common.managers.sessionManager import Session
 
 
+# tag types
+# TODO: maybe need other var/const
+SystemACL = namedtuple('SystemACL', [
+    # user custom tag type
+    'BASE_ACL',
+    # geofence tag type
+    'USER_ACL'
+])(0x1, 0x10)
+
+
 # get auth-token from request
 def get_auth_token_from_request(request: web.Request, param_name: str) -> str:
     return request.headers.get(param_name) or request.cookies.get(param_name)
@@ -24,18 +35,22 @@ class DefParamsSchema(Schema):
     ids = fields.List(fields.Integer())
     fields = fields.List(fields.String())
 
+
 # GET: schema for default get-params
 class DefGETParamsSchema(Schema):
     ids = fields.List(fields.Integer(), default='all')
     fields = fields.List(fields.String())
 
+
 # POST: schema for default get-params
 class DefPOSTParamsSchema(Schema):
     fields = fields.List(fields.String())
 
+
 # PUT: schema for default get-params
 class DefPUTParamsSchema(Schema):
     fields = fields.List(fields.String())
+
 
 # DELETE: schema for default get-params
 class DefDELETEParamsSchema(Schema):
@@ -112,7 +127,7 @@ class ExtendedApiView(web.View, metaclass=ABCMeta):
                 # calc param by schema.type (list or not)
                 if type(self._get_params_schema.fields[param_name]) == fields.List:
                     params[param_name] = p.split(',') if p else []
-                elif p:
+                else:
                     params[param_name] = p
 
         # validate

@@ -1,6 +1,6 @@
 # PROD-requirements
 
-aiohttp==3.3.2
+aiohttp==3.7.4
 urllib3==1.23
 SQLAlchemy==1.2.10
 asyncpgsa==0.23.0
